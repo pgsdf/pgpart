@@ -28,7 +28,7 @@ type MainWindow struct {
 
 func NewMainWindow(app fyne.App) *MainWindow {
 	mw := &MainWindow{
-		window:       app.NewWindow("PGPart - Partition Manager for FreeBSD"),
+		window:       app.NewWindow("PGPart - Partition Manager"),
 		selectedDisk: -1,
 		history:      partition.NewOperationHistory(),
 	}
