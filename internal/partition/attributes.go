@@ -63,25 +63,58 @@ func GetPartitionAttributes(partName string) (*AttributeInfo, error) {
 		diskName = strings.TrimRight(partName, "0123456789ps")
 	}
 
-	// Get partition information using gpart show
-	cmd := exec.Command("gpart", "show", "-l", "-p", diskName)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get partition info: %v", err)
-	}
-
 	info := &AttributeInfo{
 		Partition:  partName,
 		Attributes: make(map[string]bool),
 		RawValue:   "",
 	}
 
+	// First try using gpart list for more detailed output
+	cmd := exec.Command("gpart", "list", partName)
+	output, err := cmd.CombinedOutput()
+
+	if err == nil {
+		// Parse gpart list output for attributes
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "attrib:") {
+				// Extract attribute value
+				attrValue := strings.TrimPrefix(line, "attrib:")
+				attrValue = strings.TrimSpace(attrValue)
+				info.RawValue = attrValue
+
+				// Parse individual attributes
+				attrValueUpper := strings.ToUpper(attrValue)
+				if strings.Contains(attrValueUpper, "BOOTME") {
+					info.Attributes[AttrBootme] = true
+				}
+				if strings.Contains(attrValueUpper, "BOOTONCE") {
+					info.Attributes[AttrBootonce] = true
+				}
+				if strings.Contains(attrValueUpper, "BOOTFAILED") {
+					info.Attributes[AttrBootfailed] = true
+				}
+				if strings.Contains(attrValueUpper, "NOBLOCKIO") {
+					info.Attributes[AttrNoBlockIO] = true
+				}
+				break
+			}
+		}
+		return info, nil
+	}
+
+	// Fallback to gpart show if gpart list fails
+	cmd = exec.Command("gpart", "show", "-l", "-p", diskName)
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get partition info: %v", err)
+	}
+
 	// Parse the output to find attributes
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		if strings.Contains(line, partName) {
-			fields := strings.Fields(line)
-			// The attributes field varies by output format
 			// Look for attribute indicators
 			lineUpper := strings.ToUpper(line)
 
@@ -100,9 +133,7 @@ func GetPartitionAttributes(partName string) (*AttributeInfo, error) {
 			}
 
 			// Store the raw line for reference
-			if len(fields) > 0 {
-				info.RawValue = line
-			}
+			info.RawValue = line
 			break
 		}
 	}
@@ -190,6 +221,34 @@ func IsBootable(partName string) (bool, error) {
 		return false, err
 	}
 	return info.Attributes[AttrBootme], nil
+}
+
+// GetAttributeSummary returns a brief summary of set attributes for display
+func GetAttributeSummary(partName string) string {
+	info, err := GetPartitionAttributes(partName)
+	if err != nil {
+		return ""
+	}
+
+	var attrs []string
+	if info.Attributes[AttrBootme] {
+		attrs = append(attrs, "Bootable")
+	}
+	if info.Attributes[AttrBootonce] {
+		attrs = append(attrs, "BootOnce")
+	}
+	if info.Attributes[AttrBootfailed] {
+		attrs = append(attrs, "BootFailed")
+	}
+	if info.Attributes[AttrNoBlockIO] {
+		attrs = append(attrs, "NoBlockIO")
+	}
+
+	if len(attrs) == 0 {
+		return ""
+	}
+
+	return strings.Join(attrs, ", ")
 }
 
 // FormatAttributeInfo returns a human-readable attribute report

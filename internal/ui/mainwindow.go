@@ -62,6 +62,7 @@ func (mw *MainWindow) setupUI() {
 	resizeBtn := mw.createToolbarButton(theme.ZoomInIcon(), "Resize", mw.showResizeDialog)
 	deleteBtn := mw.createToolbarButton(theme.DeleteIcon(), "Delete", mw.showDeletePartitionDialog)
 	formatBtn := mw.createToolbarButton(theme.DocumentCreateIcon(), "Format", mw.showFormatDialog)
+	bootableBtn := mw.createToolbarButton(theme.ConfirmIcon(), "Toggle Boot", mw.toggleBootableDialog)
 	attrBtn := mw.createToolbarButton(theme.SettingsIcon(), "Attributes", mw.showAttributesDialog)
 	batchBtn := mw.createToolbarButton(theme.ListIcon(), "Batch", mw.showBatchDialog)
 
@@ -82,6 +83,8 @@ func (mw *MainWindow) setupUI() {
 		resizeBtn,
 		deleteBtn,
 		formatBtn,
+		widget.NewSeparator(),
+		bootableBtn,
 		attrBtn,
 		widget.NewSeparator(),
 		batchBtn,
@@ -255,14 +258,34 @@ func (mw *MainWindow) createPartitionCard(part partition.Partition) *fyne.Contai
 		mountLabel.TextStyle = fyne.TextStyle{Italic: true}
 	}
 
-	card := container.NewVBox(
+	// Check for GPT attributes
+	attrSummary := partition.GetAttributeSummary(part.Name)
+	var attrLabel *widget.Label
+	if attrSummary != "" {
+		attrLabel = widget.NewLabel(fmt.Sprintf("Attributes: %s", attrSummary))
+		attrLabel.TextStyle = fyne.TextStyle{Bold: true}
+		// Use a color to highlight bootable partitions
+		if strings.Contains(attrSummary, "Bootable") {
+			attrLabel.Importance = widget.HighImportance
+		}
+	}
+
+	cardItems := []fyne.CanvasObject{
 		nameLabel,
 		typeLabel,
 		sizeLabel,
 		fsLabel,
 		mountLabel,
-		widget.NewSeparator(),
-	)
+	}
+
+	// Add attribute label if present
+	if attrLabel != nil {
+		cardItems = append(cardItems, attrLabel)
+	}
+
+	cardItems = append(cardItems, widget.NewSeparator())
+
+	card := container.NewVBox(cardItems...)
 
 	return card
 }
@@ -686,6 +709,100 @@ func (mw *MainWindow) executeRedo(entry *partition.HistoryEntry) {
 		dialog.ShowInformation("Redo Complete", fmt.Sprintf("Successfully redid: %s", entry.Description), mw.window)
 		mw.refreshDisks()
 	}
+}
+
+func (mw *MainWindow) toggleBootableDialog() {
+	if mw.selectedDisk < 0 {
+		dialog.ShowInformation("No Disk Selected", "Please select a disk first", mw.window)
+		return
+	}
+
+	disk := mw.disks[mw.selectedDisk]
+
+	if len(disk.Partitions) == 0 {
+		dialog.ShowInformation("No Partitions", "This disk has no partitions", mw.window)
+		return
+	}
+
+	// Validate disk is GPT
+	if err := partition.ValidatePartitionForAttributes(disk.Partitions[0].Name); err != nil {
+		dialog.ShowError(fmt.Errorf("This disk does not support GPT attributes.\n\nOnly GPT-partitioned disks support bootable flags. This disk appears to be using %s partitioning.", disk.Scheme), mw.window)
+		return
+	}
+
+	// Create partition selection with current bootable status
+	partOptions := make([]string, len(disk.Partitions))
+	for i, part := range disk.Partitions {
+		bootable, _ := partition.IsBootable(part.Name)
+		if bootable {
+			partOptions[i] = fmt.Sprintf("%s [BOOTABLE]", part.Name)
+		} else {
+			partOptions[i] = part.Name
+		}
+	}
+
+	partSelect := widget.NewSelect(partOptions, nil)
+	helpLabel := widget.NewLabel("Toggle the 'bootme' attribute to mark a partition as bootable.\nThis is commonly used for EFI system partitions.")
+	helpLabel.Wrapping = fyne.TextWrapWord
+
+	formContent := container.NewVBox(
+		widget.NewForm(
+			widget.NewFormItem("Partition", partSelect),
+		),
+		widget.NewSeparator(),
+		helpLabel,
+	)
+
+	customDialog := dialog.NewCustomConfirm("Toggle Bootable Flag", "Toggle", "Cancel", formContent,
+		func(ok bool) {
+			if !ok {
+				return
+			}
+
+			if partSelect.Selected == "" {
+				dialog.ShowError(fmt.Errorf("Please select a partition"), mw.window)
+				return
+			}
+
+			// Extract partition name (remove [BOOTABLE] suffix if present)
+			selectedPartName := partSelect.Selected
+			if strings.Contains(selectedPartName, " [BOOTABLE]") {
+				selectedPartName = strings.TrimSuffix(selectedPartName, " [BOOTABLE]")
+			}
+
+			// Find the selected partition
+			var selectedPart *partition.Partition
+			for i := range disk.Partitions {
+				if disk.Partitions[i].Name == selectedPartName {
+					selectedPart = &disk.Partitions[i]
+					break
+				}
+			}
+
+			if selectedPart == nil {
+				dialog.ShowError(fmt.Errorf("Partition not found"), mw.window)
+				return
+			}
+
+			// Toggle the bootable attribute
+			err := partition.TogglePartitionAttribute(selectedPart.Name, partition.AttrBootme)
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("Failed to toggle bootable flag: %v", err), mw.window)
+				return
+			}
+
+			// Check new status
+			isBootable, _ := partition.IsBootable(selectedPart.Name)
+			if isBootable {
+				dialog.ShowInformation("Success", fmt.Sprintf("Partition %s is now marked as BOOTABLE", selectedPart.Name), mw.window)
+			} else {
+				dialog.ShowInformation("Success", fmt.Sprintf("Removed bootable flag from partition %s", selectedPart.Name), mw.window)
+			}
+
+			mw.refreshDisks()
+		}, mw.window)
+
+	customDialog.Show()
 }
 
 func (mw *MainWindow) showAttributesDialog() {
