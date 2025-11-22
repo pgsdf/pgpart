@@ -387,21 +387,35 @@ func (mw *MainWindow) showFormatDialog() {
 	}
 
 	partSelect := widget.NewSelect(partNames, nil)
-	fsSelect := widget.NewSelect([]string{"UFS", "FAT32"}, nil)
+	fsSelect := widget.NewSelect([]string{"UFS", "FAT32", "ext2", "ext3", "ext4", "NTFS"}, nil)
 	fsSelect.SetSelected("UFS")
 
-	dialog.ShowForm("Format Partition", "Format", "Cancel",
-		[]*widget.FormItem{
+	infoLabel := widget.NewLabel("Note: ext2/3/4 requires e2fsprogs package\nNTFS requires fusefs-ntfs package")
+	infoLabel.Wrapping = fyne.TextWrapWord
+	infoLabel.TextStyle = fyne.TextStyle{Italic: true}
+
+	formContent := container.NewVBox(
+		widget.NewForm(
 			widget.NewFormItem("Partition", partSelect),
 			widget.NewFormItem("Filesystem", fsSelect),
-		},
+		),
+		widget.NewSeparator(),
+		infoLabel,
+	)
+
+	customDialog := dialog.NewCustomConfirm("Format Partition", "Format", "Cancel", formContent,
 		func(ok bool) {
 			if !ok {
 				return
 			}
 
+			if partSelect.Selected == "" {
+				dialog.ShowError(fmt.Errorf("please select a partition"), mw.window)
+				return
+			}
+
 			dialog.ShowConfirm("Confirm Format",
-				fmt.Sprintf("Are you sure you want to format %s? This will DESTROY all data!", partSelect.Selected),
+				fmt.Sprintf("Are you sure you want to format %s as %s?\n\nThis will DESTROY all data!", partSelect.Selected, fsSelect.Selected),
 				func(confirmed bool) {
 					if !confirmed {
 						return
@@ -413,10 +427,13 @@ func (mw *MainWindow) showFormatDialog() {
 						return
 					}
 
-					dialog.ShowInformation("Success", "Partition formatted successfully", mw.window)
+					dialog.ShowInformation("Success", fmt.Sprintf("Partition formatted successfully as %s", fsSelect.Selected), mw.window)
 					mw.refreshDisks()
 				}, mw.window)
 		}, mw.window)
+
+	customDialog.Resize(fyne.NewSize(450, 250))
+	customDialog.Show()
 }
 
 func (mw *MainWindow) showResizeDialog() {
