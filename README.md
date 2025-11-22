@@ -108,6 +108,8 @@ The application provides a split-pane interface with:
 
 ### Running the Application
 
+**GUI Mode (default):**
+
 For full functionality, run with root privileges:
 
 ```bash
@@ -120,7 +122,105 @@ Or if installed system-wide:
 sudo pgpart
 ```
 
-### Basic Operations
+**CLI Mode:**
+
+PGPart can also be used from the command line for scripting and automation:
+
+```bash
+sudo pgpart <command> [options]
+```
+
+### Command-Line Interface
+
+PGPart supports the following CLI commands:
+
+#### List all disks and partitions
+```bash
+pgpart list
+```
+
+Displays a formatted table of all disks, their partitions, sizes, filesystems, and mount points.
+
+#### Create a new partition
+```bash
+pgpart create <disk> <size> <fstype>
+```
+
+Examples:
+```bash
+pgpart create ada0 10G ufs      # Create 10GB UFS partition
+pgpart create ada0 512M swap    # Create 512MB swap partition
+pgpart create nvd0 20G ext4     # Create 20GB ext4 partition
+```
+
+Supported filesystems: `ufs`, `fat32`, `ext2`, `ext3`, `ext4`, `ntfs`
+
+#### Delete a partition
+```bash
+pgpart delete [-f] <disk> <index>
+```
+
+Examples:
+```bash
+pgpart delete ada0 3         # Delete partition 3 (with confirmation)
+pgpart delete -f ada0 3      # Force delete without confirmation
+```
+
+**Warning**: Deletion is permanent and cannot be undone!
+
+#### Format a partition
+```bash
+pgpart format [-f] <partition> <fstype>
+```
+
+Examples:
+```bash
+pgpart format ada0p3 ext4       # Format partition 3 as ext4
+pgpart format -f nvd0p2 ufs     # Force format without confirmation
+```
+
+**Warning**: Formatting destroys all data on the partition!
+
+#### Resize a partition
+```bash
+pgpart resize <disk> <index> <size>
+```
+
+Examples:
+```bash
+pgpart resize ada0 2 20G      # Resize partition 2 to 20GB
+pgpart resize ada0 1 512M     # Resize partition 1 to 512MB
+```
+
+#### Copy a partition
+```bash
+pgpart copy <source> <dest>
+```
+
+Example:
+```bash
+pgpart copy ada0p1 ada0p2     # Copy partition 1 to partition 2
+```
+
+Shows real-time progress during the copy operation.
+
+#### Show detailed disk information
+```bash
+pgpart info <disk>
+```
+
+Example:
+```bash
+pgpart info ada0              # Show SMART status and disk details
+```
+
+Displays:
+- Disk model and serial number
+- Temperature and power-on hours
+- SMART status and attributes
+- Disk capabilities (TRIM support, SSD/HDD type)
+
+### GUI Basic Operations
 
 #### Viewing Disks and Partitions
 1. Launch the application
@@ -311,7 +411,7 @@ Click the "Refresh" button in the toolbar to rescan all disks.
 
 The application is organized into the following packages:
 
-- `main`: Application entry point and theme configuration
+- `main`: Application entry point and theme configuration with GUI/CLI mode selection
 - `internal/partition`: Core partition detection and management
   - `partition.go`: Disk and partition detection using geom/gpart
   - `operations.go`: Partition operations (create, delete, format, resize)
@@ -326,6 +426,8 @@ The application is organized into the following packages:
   - `copydialog.go`: Copy and move partition dialogs with progress bars
   - `diskinfodialog.go`: Detailed disk information display with SMART data
   - `batchdialog.go`: Batch operations queue manager with execution controls
+- `internal/cli`: Command-line interface for scripting
+  - `cli.go`: CLI command parser and handlers for all operations
 
 ## BSD Tools Used
 
@@ -362,7 +464,7 @@ PGPart uses the following FreeBSD system utilities:
 ### Project Structure
 ```
 pgpart/
-├── main.go                    # Application entry point
+├── main.go                    # Application entry point (GUI/CLI mode)
 ├── theme.go                   # UI theme configuration
 ├── internal/
 │   ├── partition/
@@ -372,13 +474,15 @@ pgpart/
 │   │   ├── diskinfo.go        # SMART status and disk info
 │   │   ├── batch.go           # Batch operation queue
 │   │   └── history.go         # Undo/redo history tracking
-│   └── ui/
-│       ├── mainwindow.go      # Main UI
-│       ├── partitionview.go   # Partition visualization
-│       ├── resizedialog.go    # Resize dialog
-│       ├── copydialog.go      # Copy/move dialogs
-│       ├── diskinfodialog.go  # Disk information dialog
-│       └── batchdialog.go     # Batch operations manager
+│   ├── ui/
+│   │   ├── mainwindow.go      # Main UI
+│   │   ├── partitionview.go   # Partition visualization
+│   │   ├── resizedialog.go    # Resize dialog
+│   │   ├── copydialog.go      # Copy/move dialogs
+│   │   ├── diskinfodialog.go  # Disk information dialog
+│   │   └── batchdialog.go     # Batch operations manager
+│   └── cli/
+│       └── cli.go             # Command-line interface
 ├── go.mod                     # Go module definition
 └── README.md                  # This file
 ```
@@ -433,7 +537,7 @@ Planned features for future releases:
 - [x] Detailed disk information (SMART status) ✅ **IMPLEMENTED**
 - [x] Batch operations ✅ **IMPLEMENTED**
 - [x] Undo/redo functionality ✅ **IMPLEMENTED**
-- [ ] Command-line interface for scripting
+- [x] Command-line interface for scripting ✅ **IMPLEMENTED**
 - [ ] Partition alignment optimization
 - [ ] GPT attribute editing
 - [ ] Online filesystem resize (grow/shrink while mounted)
