@@ -42,11 +42,14 @@ A modern, graphical partition manager for FreeBSD and GhostBSD, similar to GPart
   - Clear indication of which operations can be reversed
   - Confirmation dialogs before undo/redo execution
 - **GPT Attribute Management**:
-  - View and edit GPT partition attributes
+  - View and edit GPT partition attributes via comprehensive dialog
+  - Quick "Toggle Bootable" button for common operations
+  - Visual attribute indicators in partition list (shows bootable status)
   - Set/unset bootable flag (`bootme`)
   - Configure boot-once flag for testing (`bootonce`)
   - Manage boot failure indicators (`bootfailed`)
   - Full attribute management via CLI and GUI
+  - Improved attribute detection using gpart list and show
 - **Partition Alignment Optimization**:
   - Check partition alignment for optimal performance
   - Detect misaligned partitions on SSD and HDD
