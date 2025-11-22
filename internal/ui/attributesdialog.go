@@ -88,35 +88,40 @@ func (ad *AttributesDialog) Show() {
 	scrollContent := container.NewVScroll(content)
 	scrollContent.SetMinSize(fyne.NewSize(500, 400))
 
-	// Create dialog
-	customDialog := dialog.NewCustom("Edit GPT Attributes", "Close", scrollContent, ad.window)
+	// Create a placeholder for the dialog so we can reference it in the button callbacks
+	var customDialog dialog.Dialog
 
 	// Add Apply button functionality
 	applyBtn := widget.NewButton("Apply", func() {
-		ad.applyAttributes(checkboxes, attrInfo, customDialog)
+		ad.applyAttributes(checkboxes, attrInfo)
 	})
 
-	// Create custom dialog with Apply button
+	closeBtn := widget.NewButton("Close", func() {
+		if customDialog != nil {
+			customDialog.Hide()
+		}
+	})
+
+	// Create dialog content with Apply button
 	dialogContent := container.NewBorder(
 		nil,
 		container.NewHBox(
 			applyBtn,
-			widget.NewButton("Close", func() {
-				customDialog.Hide()
-			}),
+			closeBtn,
 		),
 		nil,
 		nil,
 		scrollContent,
 	)
 
-	customDialog.SetContent(dialogContent)
+	// Create the actual dialog
+	customDialog = dialog.NewCustom("Edit GPT Attributes", "", dialogContent, ad.window)
 	customDialog.Resize(fyne.NewSize(550, 500))
 	customDialog.Show()
 }
 
 // applyAttributes applies the selected attributes
-func (ad *AttributesDialog) applyAttributes(checkboxes map[string]*widget.Check, currentInfo *partition.AttributeInfo, dlg dialog.Dialog) {
+func (ad *AttributesDialog) applyAttributes(checkboxes map[string]*widget.Check, currentInfo *partition.AttributeInfo) {
 	var errors []string
 	var changes []string
 
