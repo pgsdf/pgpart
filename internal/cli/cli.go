@@ -86,7 +86,7 @@ func (c *CLI) printUsage() {
 
 // listCommand lists all disks and partitions
 func (c *CLI) listCommand() int {
-	disks, err := partition.DetectDisks()
+	disks, err := partition.GetDisks()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error detecting disks: %v\n", err)
 		return 1
