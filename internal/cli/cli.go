@@ -44,6 +44,8 @@ func (c *CLI) Run() int {
 		return c.copyCommand()
 	case "info":
 		return c.infoCommand()
+	case "align":
+		return c.alignCommand()
 	case "help", "-h", "--help":
 		c.printUsage()
 		return 0
@@ -70,6 +72,7 @@ func (c *CLI) printUsage() {
 	fmt.Println("                          Resize a partition")
 	fmt.Println("  copy <source> <dest>    Copy partition data")
 	fmt.Println("  info <disk>             Show detailed disk information")
+	fmt.Println("  align <disk|partition>  Check partition alignment")
 	fmt.Println("  help                    Show this help message")
 	fmt.Println("\nOptions:")
 	fmt.Println("  -gui                    Launch graphical interface (default if no command)")
@@ -81,6 +84,7 @@ func (c *CLI) printUsage() {
 	fmt.Println("  pgpart resize ada0 2 20G")
 	fmt.Println("  pgpart copy ada0p1 ada0p2")
 	fmt.Println("  pgpart info ada0")
+	fmt.Println("  pgpart align ada0")
 	fmt.Println("\nNote: Most operations require root privileges")
 }
 
@@ -409,4 +413,77 @@ func repeatChar(char rune, n int) string {
 		result[i] = char
 	}
 	return string(result)
+}
+
+// alignCommand checks partition alignment
+func (c *CLI) alignCommand() int {
+	fs := flag.NewFlagSet("align", flag.ExitOnError)
+	if err := fs.Parse(c.args[2:]); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing arguments: %v\n", err)
+		return 1
+	}
+
+	args := fs.Args()
+	if len(args) < 1 {
+		fmt.Fprintln(os.Stderr, "Usage: pgpart align <disk|partition>")
+		fmt.Fprintln(os.Stderr, "Examples:")
+		fmt.Fprintln(os.Stderr, "  pgpart align ada0        # Check all partitions on ada0")
+		fmt.Fprintln(os.Stderr, "  pgpart align ada0p1      # Check specific partition")
+		return 1
+	}
+
+	target := args[0]
+
+	// Check if target is a partition or disk
+	if strings.Contains(target, "p") || strings.Contains(target, "s") {
+		// Single partition
+		info, err := partition.CheckPartitionAlignment(target)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error checking alignment: %v\n", err)
+			return 1
+		}
+
+		fmt.Println(partition.FormatAlignmentInfo(info))
+		if !info.IsAligned {
+			return 1
+		}
+		return 0
+	}
+
+	// Entire disk
+	results, err := partition.CheckDiskAlignment(target)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error checking disk alignment: %v\n", err)
+		return 1
+	}
+
+	if len(results) == 0 {
+		fmt.Printf("No partitions found on %s\n", target)
+		return 0
+	}
+
+	fmt.Printf("Alignment Status for %s\n", target)
+	fmt.Printf("===================%s\n", repeatChar('=', len(target)))
+
+	aligned := 0
+	misaligned := 0
+	for _, info := range results {
+		fmt.Println()
+		fmt.Println(partition.FormatAlignmentInfo(&info))
+		if info.IsAligned {
+			aligned++
+		} else {
+			misaligned++
+		}
+	}
+
+	fmt.Println()
+	fmt.Printf("Summary: %d aligned, %d misaligned\n", aligned, misaligned)
+
+	if misaligned > 0 {
+		fmt.Println("\nRecommendation: Consider recreating misaligned partitions for better performance")
+		return 1
+	}
+
+	return 0
 }
