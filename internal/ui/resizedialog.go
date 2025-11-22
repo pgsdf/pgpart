@@ -177,7 +177,7 @@ func (rd *ResizeDialog) Show() {
 				return
 			}
 
-			useOnlineResize := onlineResizeCheck.Checked && !onlineResizeCheck.Disabled
+			useOnlineResize := onlineResizeCheck.Checked && !onlineResizeCheck.Disabled()
 			rd.performResize(sizeMB*1024*1024, useOnlineResize)
 		}, rd.window)
 
