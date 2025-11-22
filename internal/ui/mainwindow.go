@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/pgsdf/pgpart/internal/partition"
 )
@@ -39,20 +40,20 @@ func (mw *MainWindow) setupUI() {
 	mw.infoLabel = widget.NewLabel("Select a disk to view partitions")
 
 	toolbar := widget.NewToolbar(
-		widget.NewToolbarAction(fyne.NewMenuItem("Refresh", mw.refreshDisks).Icon, mw.refreshDisks),
-		widget.NewToolbarAction(fyne.NewMenuItem("Disk Info", nil).Icon, mw.showDiskInfo),
+		widget.NewToolbarAction(theme.ViewRefreshIcon(), mw.refreshDisks),
+		widget.NewToolbarAction(theme.InfoIcon(), mw.showDiskInfo),
 		widget.NewToolbarSeparator(),
-		widget.NewToolbarAction(fyne.NewMenuItem("New Partition Table", nil).Icon, mw.showNewPartitionTableDialog),
-		widget.NewToolbarAction(fyne.NewMenuItem("New Partition", nil).Icon, mw.showNewPartitionDialog),
+		widget.NewToolbarAction(theme.StorageIcon(), mw.showNewPartitionTableDialog),
+		widget.NewToolbarAction(theme.ContentAddIcon(), mw.showNewPartitionDialog),
 		widget.NewToolbarSeparator(),
-		widget.NewToolbarAction(fyne.NewMenuItem("Copy Partition", nil).Icon, mw.showCopyDialog),
-		widget.NewToolbarAction(fyne.NewMenuItem("Move Partition", nil).Icon, mw.showMoveDialog),
+		widget.NewToolbarAction(theme.ContentCopyIcon(), mw.showCopyDialog),
+		widget.NewToolbarAction(theme.NavigateNextIcon(), mw.showMoveDialog),
 		widget.NewToolbarSeparator(),
-		widget.NewToolbarAction(fyne.NewMenuItem("Resize Partition", nil).Icon, mw.showResizeDialog),
-		widget.NewToolbarAction(fyne.NewMenuItem("Delete Partition", nil).Icon, mw.showDeletePartitionDialog),
-		widget.NewToolbarAction(fyne.NewMenuItem("Format", nil).Icon, mw.showFormatDialog),
+		widget.NewToolbarAction(theme.ZoomInIcon(), mw.showResizeDialog),
+		widget.NewToolbarAction(theme.DeleteIcon(), mw.showDeletePartitionDialog),
+		widget.NewToolbarAction(theme.DocumentCreateIcon(), mw.showFormatDialog),
 		widget.NewToolbarSeparator(),
-		widget.NewToolbarAction(fyne.NewMenuItem("Batch Operations", nil).Icon, mw.showBatchDialog),
+		widget.NewToolbarAction(theme.ListIcon(), mw.showBatchDialog),
 	)
 
 	mw.diskList = widget.NewList(
