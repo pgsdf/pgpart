@@ -220,6 +220,29 @@ Displays:
 - SMART status and attributes
 - Disk capabilities (TRIM support, SSD/HDD type)
 
+#### Check partition alignment
+```bash
+pgpart align <disk|partition>
+```
+
+Examples:
+```bash
+pgpart align ada0             # Check all partitions on ada0
+pgpart align ada0p1           # Check specific partition
+```
+
+Displays alignment status for each partition:
+- Start offset in sectors and bytes
+- Alignment type (4 KiB, 128 KiB, 1 MiB, 4 MiB, or misaligned)
+- Performance recommendations
+- Summary of aligned vs. misaligned partitions
+
+**Why Alignment Matters:**
+- Modern disks use 4K physical sectors (Advanced Format)
+- SSDs have erase block sizes (128 KiB - 4 MiB)
+- Misaligned partitions cause performance degradation
+- 1 MiB alignment recommended for optimal performance
+
 ### GUI Basic Operations
 
 #### Viewing Disks and Partitions
@@ -419,6 +442,7 @@ The application is organized into the following packages:
   - `diskinfo.go`: Detailed disk information and SMART status retrieval
   - `batch.go`: Batch operation queue management and execution
   - `history.go`: Operation history tracking and undo/redo management
+  - `alignment.go`: Partition alignment checking and optimization
 - `internal/ui`: User interface components
   - `mainwindow.go`: Main application window and UI logic
   - `partitionview.go`: Interactive partition visualization with drag handles
@@ -473,7 +497,8 @@ pgpart/
 │   │   ├── copy.go            # Partition copying and moving
 │   │   ├── diskinfo.go        # SMART status and disk info
 │   │   ├── batch.go           # Batch operation queue
-│   │   └── history.go         # Undo/redo history tracking
+│   │   ├── history.go         # Undo/redo history tracking
+│   │   └── alignment.go       # Partition alignment checking
 │   ├── ui/
 │   │   ├── mainwindow.go      # Main UI
 │   │   ├── partitionview.go   # Partition visualization
@@ -538,6 +563,6 @@ Planned features for future releases:
 - [x] Batch operations ✅ **IMPLEMENTED**
 - [x] Undo/redo functionality ✅ **IMPLEMENTED**
 - [x] Command-line interface for scripting ✅ **IMPLEMENTED**
-- [ ] Partition alignment optimization
+- [x] Partition alignment optimization ✅ **IMPLEMENTED**
 - [ ] GPT attribute editing
 - [ ] Online filesystem resize (grow/shrink while mounted)
