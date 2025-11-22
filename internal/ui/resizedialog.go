@@ -90,6 +90,52 @@ func (rd *ResizeDialog) Show() {
 	))
 	infoLabel.Wrapping = fyne.TextWrapWord
 
+	// Check online resize capability
+	isGrow := true // Will be updated based on actual size change
+	onlineResizeCheck := widget.NewCheck("Online Resize (keep filesystem mounted)", nil)
+	onlineResizeCheck.Disable()
+
+	onlineResizeInfo := widget.NewLabel("")
+	onlineResizeInfo.Wrapping = fyne.TextWrapWord
+
+	// Update online resize info based on size change
+	updateOnlineResizeInfo := func(newSizeMB uint64) {
+		isGrow = newSizeMB > currentSizeMB
+		canOnline, reason := partition.CanResizeOnline(rd.partition, isGrow)
+
+		if canOnline {
+			onlineResizeCheck.Enable()
+			onlineResizeCheck.Checked = true
+			recommendation := partition.GetOnlineResizeRecommendation(rd.partition, isGrow)
+			onlineResizeInfo.SetText(recommendation)
+		} else {
+			onlineResizeCheck.Disable()
+			onlineResizeCheck.Checked = false
+			onlineResizeInfo.SetText(reason)
+		}
+		onlineResizeCheck.Refresh()
+		onlineResizeInfo.Refresh()
+	}
+
+	// Update online resize info on slider/entry change
+	originalSliderOnChanged := slider.OnChanged
+	slider.OnChanged = func(value float64) {
+		originalSliderOnChanged(value)
+		updateOnlineResizeInfo(uint64(value))
+	}
+
+	originalEntryOnChanged := sizeEntry.OnChanged
+	sizeEntry.OnChanged = func(value string) {
+		originalEntryOnChanged(value)
+		sizeMB, err := strconv.ParseUint(value, 10, 64)
+		if err == nil {
+			updateOnlineResizeInfo(sizeMB)
+		}
+	}
+
+	// Initial update
+	updateOnlineResizeInfo(currentSizeMB)
+
 	warningLabel := widget.NewLabel("⚠️  WARNING: Resizing partitions can cause data loss!\nMake sure you have backups before proceeding.")
 	warningLabel.Wrapping = fyne.TextWrapWord
 
@@ -102,6 +148,9 @@ func (rd *ResizeDialog) Show() {
 		),
 		slider,
 		previewLabel,
+		widget.NewSeparator(),
+		onlineResizeCheck,
+		onlineResizeInfo,
 		widget.NewSeparator(),
 		warningLabel,
 	)
@@ -128,7 +177,8 @@ func (rd *ResizeDialog) Show() {
 				return
 			}
 
-			rd.performResize(sizeMB * 1024 * 1024)
+			useOnlineResize := onlineResizeCheck.Checked && !onlineResizeCheck.Disabled
+			rd.performResize(sizeMB*1024*1024, useOnlineResize)
 		}, rd.window)
 
 	d.Resize(fyne.NewSize(500, 400))
@@ -147,7 +197,7 @@ func (rd *ResizeDialog) calculateMaxSize() uint64 {
 	return maxSize
 }
 
-func (rd *ResizeDialog) performResize(newSizeBytes uint64) {
+func (rd *ResizeDialog) performResize(newSizeBytes uint64, useOnlineResize bool) {
 	parts := strings.Split(rd.partition.Name, "p")
 	if len(parts) < 2 {
 		dialog.ShowError(fmt.Errorf("invalid partition name format"), rd.window)
@@ -156,13 +206,24 @@ func (rd *ResizeDialog) performResize(newSizeBytes uint64) {
 
 	index := parts[len(parts)-1]
 
-	err := partition.ResizePartition(rd.disk.Name, index, newSizeBytes)
-	if err != nil {
-		dialog.ShowError(fmt.Errorf("resize failed: %w", err), rd.window)
-		return
+	var err error
+	if useOnlineResize {
+		// Perform online resize (partition + filesystem together)
+		err = partition.PerformOnlineResize(rd.disk.Name, index, newSizeBytes, rd.partition)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("online resize failed: %w", err), rd.window)
+			return
+		}
+		dialog.ShowInformation("Success", "Partition and filesystem resized online successfully!\nThe filesystem remained mounted during the operation.", rd.window)
+	} else {
+		// Perform offline resize (partition only)
+		err = partition.ResizePartition(rd.disk.Name, index, newSizeBytes)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("resize failed: %w", err), rd.window)
+			return
+		}
+		dialog.ShowInformation("Success", "Partition resized successfully.\nYou may need to resize the filesystem separately if it exists.", rd.window)
 	}
-
-	dialog.ShowInformation("Success", "Partition resized successfully", rd.window)
 
 	if rd.onResize != nil {
 		rd.onResize()
