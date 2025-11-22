@@ -641,6 +641,14 @@ func (mw *MainWindow) executeUndo(entry *partition.HistoryEntry) {
 		// Undo resize by resizing back
 		err = partition.ResizePartition(entry.UndoDisk, entry.UndoIndex, entry.UndoSize)
 
+	case "attribute":
+		// Undo attribute change by toggling back
+		if entry.AttributeSet {
+			err = partition.UnsetPartitionAttribute(entry.Partition, entry.AttributeName)
+		} else {
+			err = partition.SetPartitionAttribute(entry.Partition, entry.AttributeName)
+		}
+
 	default:
 		err = fmt.Errorf("unknown undo operation: %s", entry.UndoOperation)
 	}
@@ -695,6 +703,14 @@ func (mw *MainWindow) executeRedo(entry *partition.HistoryEntry) {
 	case "resize":
 		// Redo resize
 		err = partition.ResizePartition(entry.Disk, entry.Index, entry.Size)
+
+	case "attribute":
+		// Redo attribute change
+		if entry.AttributeSet {
+			err = partition.SetPartitionAttribute(entry.Partition, entry.AttributeName)
+		} else {
+			err = partition.UnsetPartitionAttribute(entry.Partition, entry.AttributeName)
+		}
 
 	default:
 		err = fmt.Errorf("unknown redo operation: %s", entry.Operation)
@@ -784,6 +800,9 @@ func (mw *MainWindow) toggleBootableDialog() {
 				return
 			}
 
+			// Check old status before toggling
+			wasBootable, _ := partition.IsBootable(selectedPart.Name)
+
 			// Toggle the bootable attribute
 			err := partition.TogglePartitionAttribute(selectedPart.Name, partition.AttrBootme)
 			if err != nil {
@@ -793,6 +812,10 @@ func (mw *MainWindow) toggleBootableDialog() {
 
 			// Check new status
 			isBootable, _ := partition.IsBootable(selectedPart.Name)
+
+			// Record in history
+			mw.history.RecordAttributeChange(selectedPart.Name, partition.AttrBootme, wasBootable, isBootable)
+
 			if isBootable {
 				dialog.ShowInformation("Success", fmt.Sprintf("Partition %s is now marked as BOOTABLE", selectedPart.Name), mw.window)
 			} else {
@@ -855,7 +878,7 @@ func (mw *MainWindow) showAttributesDialog() {
 
 			if selectedPart != nil {
 				// Show the attributes dialog
-				attrDialog := NewAttributesDialog(mw.window, selectedPart, mw.refreshDisks)
+				attrDialog := NewAttributesDialog(mw.window, selectedPart, mw.history, mw.refreshDisks)
 				attrDialog.Show()
 			}
 		}, mw.window)

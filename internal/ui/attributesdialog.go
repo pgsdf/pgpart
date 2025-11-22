@@ -14,14 +14,16 @@ import (
 type AttributesDialog struct {
 	window    fyne.Window
 	partition *partition.Partition
+	history   *partition.OperationHistory
 	onUpdate  func()
 }
 
 // NewAttributesDialog creates a new attributes dialog
-func NewAttributesDialog(window fyne.Window, part *partition.Partition, onUpdate func()) *AttributesDialog {
+func NewAttributesDialog(window fyne.Window, part *partition.Partition, history *partition.OperationHistory, onUpdate func()) *AttributesDialog {
 	return &AttributesDialog{
 		window:    window,
 		partition: part,
+		history:   history,
 		onUpdate:  onUpdate,
 	}
 }
@@ -137,12 +139,20 @@ func (ad *AttributesDialog) applyAttributes(checkboxes map[string]*widget.Check,
 				err = partition.SetPartitionAttribute(ad.partition.Name, attrName)
 				if err == nil {
 					changes = append(changes, fmt.Sprintf("Set '%s'", attrName))
+					// Record in history
+					if ad.history != nil {
+						ad.history.RecordAttributeChange(ad.partition.Name, attrName, wasSet, nowSet)
+					}
 				}
 			} else {
 				// Unset the attribute
 				err = partition.UnsetPartitionAttribute(ad.partition.Name, attrName)
 				if err == nil {
 					changes = append(changes, fmt.Sprintf("Unset '%s'", attrName))
+					// Record in history
+					if ad.history != nil {
+						ad.history.RecordAttributeChange(ad.partition.Name, attrName, wasSet, nowSet)
+					}
 				}
 			}
 

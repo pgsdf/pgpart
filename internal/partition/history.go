@@ -29,6 +29,11 @@ type HistoryEntry struct {
 	FSType    string
 	OldSize   uint64
 	OldFSType string
+
+	// Attribute operation details
+	Partition     string
+	AttributeName string
+	AttributeSet  bool // true if attribute was set, false if unset
 }
 
 // OperationHistory manages the history of partition operations
@@ -182,6 +187,40 @@ func (oh *OperationHistory) RecordCopy(source, dest string, size uint64) {
 		Disk:        source,
 		Index:       dest,
 		Size:        size,
+	}
+
+	oh.entries = append(oh.entries, entry)
+	oh.currentPos = len(oh.entries) - 1
+	oh.nextID++
+}
+
+// RecordAttributeChange records a GPT attribute change operation
+func (oh *OperationHistory) RecordAttributeChange(partition, attribute string, wasSet, nowSet bool) {
+	oh.mu.Lock()
+	defer oh.mu.Unlock()
+
+	if oh.currentPos < len(oh.entries)-1 {
+		oh.entries = oh.entries[:oh.currentPos+1]
+	}
+
+	var action string
+	if nowSet {
+		action = "Set"
+	} else {
+		action = "Unset"
+	}
+
+	entry := &HistoryEntry{
+		ID:            oh.nextID,
+		Timestamp:     time.Now(),
+		Operation:     "attribute",
+		Description:   fmt.Sprintf("%s attribute '%s' on %s", action, attribute, partition),
+		Reversible:    true, // Can toggle back
+		Reversed:      false,
+		UndoOperation: "attribute",
+		Partition:     partition,
+		AttributeName: attribute,
+		AttributeSet:  nowSet,
 	}
 
 	oh.entries = append(oh.entries, entry)
