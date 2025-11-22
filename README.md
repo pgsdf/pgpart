@@ -28,6 +28,13 @@ A modern, graphical partition manager for FreeBSD and GhostBSD, similar to GPart
   - Disk temperature, power-on hours, power cycle count
   - Individual SMART attribute details with status indicators
   - Capability detection (TRIM support, SSD/HDD identification)
+- **Batch Operations**:
+  - Queue multiple partition operations for sequential execution
+  - Supports format, delete, resize, copy operations in batch mode
+  - Reorder operations with move up/down controls
+  - Progress tracking across all operations
+  - Stop on error or continue options
+  - Review and manage operation queue before execution
 - **Modern GUI**: Clean, intuitive interface using Fyne
 
 ## Screenshots
@@ -227,6 +234,45 @@ sudo pgpart
 - SMART data requires the disk to support SMART monitoring
 - Some attributes may not be available on all disk models
 
+#### Using Batch Operations
+Batch operations allow you to queue multiple partition operations and execute them sequentially:
+
+1. Click the "Batch Operations" button in the toolbar
+2. Add operations to the queue using the operation buttons:
+   - **Add Format**: Queue a partition format operation
+   - **Add Delete**: Queue a partition deletion
+   - **Add Resize**: Queue a partition resize operation
+   - **Add Copy**: Queue a partition copy operation
+3. Manage your queue:
+   - **Remove Selected**: Remove an operation from the queue
+   - **Clear All**: Remove all operations
+   - **Move Up/Down**: Reorder operations in the queue
+4. Configure execution options:
+   - **Stop on error**: Check to halt execution if any operation fails
+   - Uncheck to continue executing remaining operations after failures
+5. Click **Execute All** to run all queued operations
+
+**Operation Status Indicators:**
+- ⏸ Pending - Operation queued but not started
+- ▶ Running - Operation currently executing
+- ✓ Completed - Operation finished successfully
+- ✗ Failed - Operation failed with error
+
+**Important Notes:**
+- Operations execute in queue order (top to bottom)
+- All operations are destructive and **cannot be undone**
+- Review your queue carefully before executing
+- Progress bar shows overall completion across all operations
+- Failed operations show error details in the status
+- You can reorder operations before execution to optimize efficiency
+
+**Best Practices:**
+- Group similar operations together (e.g., all deletions, then all formats)
+- Delete operations should typically come before create operations
+- Format operations should come after partition creation
+- Always verify source/destination for copy operations
+- Use "Stop on error" for critical sequences where order matters
+
 #### Refreshing the Disk List
 Click the "Refresh" button in the toolbar to rescan all disks.
 
@@ -240,12 +286,14 @@ The application is organized into the following packages:
   - `operations.go`: Partition operations (create, delete, format, resize)
   - `copy.go`: Partition copying and moving with progress tracking
   - `diskinfo.go`: Detailed disk information and SMART status retrieval
+  - `batch.go`: Batch operation queue management and execution
 - `internal/ui`: User interface components
   - `mainwindow.go`: Main application window and UI logic
   - `partitionview.go`: Interactive partition visualization with drag handles
   - `resizedialog.go`: Advanced resize dialog with slider and validation
   - `copydialog.go`: Copy and move partition dialogs with progress bars
   - `diskinfodialog.go`: Detailed disk information display with SMART data
+  - `batchdialog.go`: Batch operations queue manager with execution controls
 
 ## BSD Tools Used
 
@@ -289,13 +337,15 @@ pgpart/
 │   │   ├── partition.go       # Disk detection
 │   │   ├── operations.go      # Partition operations
 │   │   ├── copy.go            # Partition copying and moving
-│   │   └── diskinfo.go        # SMART status and disk info
+│   │   ├── diskinfo.go        # SMART status and disk info
+│   │   └── batch.go           # Batch operation queue
 │   └── ui/
 │       ├── mainwindow.go      # Main UI
 │       ├── partitionview.go   # Partition visualization
 │       ├── resizedialog.go    # Resize dialog
 │       ├── copydialog.go      # Copy/move dialogs
-│       └── diskinfodialog.go  # Disk information dialog
+│       ├── diskinfodialog.go  # Disk information dialog
+│       └── batchdialog.go     # Batch operations manager
 ├── go.mod                     # Go module definition
 └── README.md                  # This file
 ```
@@ -348,7 +398,7 @@ Planned features for future releases:
 - [x] Support for more filesystems (ext2/3/4, NTFS) ✅ **IMPLEMENTED**
 - [x] Partition copying and moving ✅ **IMPLEMENTED**
 - [x] Detailed disk information (SMART status) ✅ **IMPLEMENTED**
-- [ ] Batch operations
+- [x] Batch operations ✅ **IMPLEMENTED**
 - [ ] Undo/redo functionality
 - [ ] Command-line interface for scripting
 - [ ] Partition alignment optimization

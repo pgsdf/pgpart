@@ -51,6 +51,8 @@ func (mw *MainWindow) setupUI() {
 		widget.NewToolbarAction(fyne.NewMenuItem("Resize Partition", nil).Icon, mw.showResizeDialog),
 		widget.NewToolbarAction(fyne.NewMenuItem("Delete Partition", nil).Icon, mw.showDeletePartitionDialog),
 		widget.NewToolbarAction(fyne.NewMenuItem("Format", nil).Icon, mw.showFormatDialog),
+		widget.NewToolbarSeparator(),
+		widget.NewToolbarAction(fyne.NewMenuItem("Batch Operations", nil).Icon, mw.showBatchDialog),
 	)
 
 	mw.diskList = widget.NewList(
@@ -537,6 +539,11 @@ func (mw *MainWindow) showDiskInfo() {
 	disk := mw.disks[mw.selectedDisk]
 	infoDialog := NewDiskInfoDialog(mw.window, disk.Name)
 	infoDialog.Show()
+}
+
+func (mw *MainWindow) showBatchDialog() {
+	batchDialog := NewBatchDialog(mw.window, mw.disks)
+	batchDialog.Show()
 }
 
 func (mw *MainWindow) Show() {
