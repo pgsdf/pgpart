@@ -19,13 +19,13 @@ type Partition struct {
 }
 
 type Disk struct {
-	Name        string
-	Model       string
-	Size        uint64
-	SectorSize  uint64
-	Scheme      string
-	Partitions  []Partition
-	Device      string
+	Name       string
+	Model      string
+	Size       uint64
+	SectorSize uint64
+	Scheme     string
+	Partitions []Partition
+	Device     string
 }
 
 func GetDisks() ([]Disk, error) {
