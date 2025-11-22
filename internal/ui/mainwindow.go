@@ -40,6 +40,7 @@ func (mw *MainWindow) setupUI() {
 
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(fyne.NewMenuItem("Refresh", mw.refreshDisks).Icon, mw.refreshDisks),
+		widget.NewToolbarAction(fyne.NewMenuItem("Disk Info", nil).Icon, mw.showDiskInfo),
 		widget.NewToolbarSeparator(),
 		widget.NewToolbarAction(fyne.NewMenuItem("New Partition Table", nil).Icon, mw.showNewPartitionTableDialog),
 		widget.NewToolbarAction(fyne.NewMenuItem("New Partition", nil).Icon, mw.showNewPartitionDialog),
@@ -525,6 +526,17 @@ func (mw *MainWindow) showCopyDialog() {
 func (mw *MainWindow) showMoveDialog() {
 	moveDialog := NewCopyDialog(mw.window, mw.disks, "move", mw.refreshDisks)
 	moveDialog.Show()
+}
+
+func (mw *MainWindow) showDiskInfo() {
+	if mw.selectedDisk < 0 {
+		dialog.ShowInformation("No Disk Selected", "Please select a disk first to view detailed information", mw.window)
+		return
+	}
+
+	disk := mw.disks[mw.selectedDisk]
+	infoDialog := NewDiskInfoDialog(mw.window, disk.Name)
+	infoDialog.Show()
 }
 
 func (mw *MainWindow) Show() {

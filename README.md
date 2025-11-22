@@ -23,6 +23,11 @@ A modern, graphical partition manager for FreeBSD and GhostBSD, similar to GPart
   - **Detection**: UFS, ZFS, FAT32, swap, ext2, ext3, ext4, NTFS
   - **Formatting**: UFS (native), FAT32 (native), ext2/3/4 (requires e2fsprogs), NTFS (requires fusefs-ntfs)
 - **Mount Point Display**: Shows current mount points for partitions
+- **Detailed Disk Information**:
+  - SMART status monitoring and health assessment
+  - Disk temperature, power-on hours, power cycle count
+  - Individual SMART attribute details with status indicators
+  - Capability detection (TRIM support, SSD/HDD identification)
 - **Modern GUI**: Clean, intuitive interface using Fyne
 
 ## Screenshots
@@ -55,6 +60,10 @@ The application provides a split-pane interface with:
 - **fusefs-ntfs**: For NTFS filesystem formatting
   ```bash
   pkg install fusefs-ntfs
+  ```
+- **smartmontools**: For detailed disk information and SMART status monitoring
+  ```bash
+  pkg install smartmontools
   ```
 
 ## Installation
@@ -203,6 +212,21 @@ sudo pgpart
 - **Cannot be undone** - ensure you have backups!
 - Operation may take several minutes
 
+#### Viewing Detailed Disk Information
+1. Select a disk from the left panel
+2. Click the "Disk Info" button in the toolbar
+3. View comprehensive disk information in the tabbed dialog:
+   - **General**: Model, serial number, firmware version, capacity, temperature, power-on hours
+   - **SMART Status**: Overall health status with color-coded indicators (green=PASSED, red=FAILED, orange=UNKNOWN)
+   - **SMART Attributes**: Detailed list of all SMART attributes with current values, worst values, thresholds, and status
+   - **Capabilities**: Disk type (SSD/HDD), TRIM support, and other features
+
+**Important Notes:**
+- Requires smartmontools package: `pkg install smartmontools`
+- Temperature warnings appear if disk temperature exceeds 60°C
+- SMART data requires the disk to support SMART monitoring
+- Some attributes may not be available on all disk models
+
 #### Refreshing the Disk List
 Click the "Refresh" button in the toolbar to rescan all disks.
 
@@ -215,11 +239,13 @@ The application is organized into the following packages:
   - `partition.go`: Disk and partition detection using geom/gpart
   - `operations.go`: Partition operations (create, delete, format, resize)
   - `copy.go`: Partition copying and moving with progress tracking
+  - `diskinfo.go`: Detailed disk information and SMART status retrieval
 - `internal/ui`: User interface components
   - `mainwindow.go`: Main application window and UI logic
   - `partitionview.go`: Interactive partition visualization with drag handles
   - `resizedialog.go`: Advanced resize dialog with slider and validation
   - `copydialog.go`: Copy and move partition dialogs with progress bars
+  - `diskinfodialog.go`: Detailed disk information display with SMART data
 
 ## BSD Tools Used
 
@@ -235,6 +261,7 @@ PGPart uses the following FreeBSD system utilities:
 - `diskinfo`: Partition size information
 - `dd`: Disk data copying (with progress monitoring)
 - `sha256`: Partition data verification
+- `smartctl`: SMART status monitoring and disk health assessment
 
 ## Limitations
 
@@ -260,9 +287,15 @@ pgpart/
 ├── internal/
 │   ├── partition/
 │   │   ├── partition.go       # Disk detection
-│   │   └── operations.go      # Partition operations
+│   │   ├── operations.go      # Partition operations
+│   │   ├── copy.go            # Partition copying and moving
+│   │   └── diskinfo.go        # SMART status and disk info
 │   └── ui/
-│       └── mainwindow.go      # Main UI
+│       ├── mainwindow.go      # Main UI
+│       ├── partitionview.go   # Partition visualization
+│       ├── resizedialog.go    # Resize dialog
+│       ├── copydialog.go      # Copy/move dialogs
+│       └── diskinfodialog.go  # Disk information dialog
 ├── go.mod                     # Go module definition
 └── README.md                  # This file
 ```
@@ -314,7 +347,7 @@ Planned features for future releases:
 - [x] Partition resizing with visual drag handles ✅ **IMPLEMENTED**
 - [x] Support for more filesystems (ext2/3/4, NTFS) ✅ **IMPLEMENTED**
 - [x] Partition copying and moving ✅ **IMPLEMENTED**
-- [ ] Detailed disk information (SMART status)
+- [x] Detailed disk information (SMART status) ✅ **IMPLEMENTED**
 - [ ] Batch operations
 - [ ] Undo/redo functionality
 - [ ] Command-line interface for scripting
