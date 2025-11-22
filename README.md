@@ -37,10 +37,11 @@ A modern, graphical partition manager for FreeBSD and GhostBSD, similar to GPart
   - Review and manage operation queue before execution
 - **Undo/Redo Functionality**:
   - Operation history tracking for all partition changes
-  - Undo reversible operations (create, resize)
+  - Undo reversible operations (create, resize, attribute changes)
   - Redo previously undone operations
   - Clear indication of which operations can be reversed
   - Confirmation dialogs before undo/redo execution
+  - Full support for GPT attribute change undo/redo
 - **GPT Attribute Management**:
   - View and edit GPT partition attributes via comprehensive dialog
   - Quick "Toggle Bootable" button for common operations
