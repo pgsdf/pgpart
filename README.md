@@ -13,10 +13,12 @@ A modern, graphical partition manager for FreeBSD and GhostBSD, similar to GPart
   - Create new partition tables (GPT, MBR, BSD)
   - Create new partitions
   - Delete partitions
-  - Format partitions (UFS, FAT32)
+  - **Format partitions**: UFS, FAT32, ext2, ext3, ext4, NTFS
   - **Resize partitions with visual drag handles or slider interface**
   - Interactive resize dialog with min/max validation
-- **Filesystem Support**: UFS, ZFS, FAT32, swap, ext4 detection
+- **Filesystem Support**:
+  - **Detection**: UFS, ZFS, FAT32, swap, ext2, ext3, ext4, NTFS
+  - **Formatting**: UFS (native), FAT32 (native), ext2/3/4 (requires e2fsprogs), NTFS (requires fusefs-ntfs)
 - **Mount Point Display**: Shows current mount points for partitions
 - **Modern GUI**: Clean, intuitive interface using Fyne
 
@@ -40,6 +42,16 @@ The application provides a split-pane interface with:
 - Required system packages:
   ```bash
   pkg install go gcc git pkgconf mesa-libs libglvnd
+  ```
+
+### Optional Packages (for extended filesystem support)
+- **e2fsprogs**: For ext2/ext3/ext4 filesystem formatting
+  ```bash
+  pkg install e2fsprogs
+  ```
+- **fusefs-ntfs**: For NTFS filesystem formatting
+  ```bash
+  pkg install fusefs-ntfs
   ```
 
 ## Installation
@@ -143,10 +155,19 @@ sudo pgpart
 1. Select a disk
 2. Click the "Format" button
 3. Select the partition
-4. Choose the filesystem type (UFS or FAT32)
+4. Choose the filesystem type:
+   - **UFS** (native FreeBSD filesystem)
+   - **FAT32** (compatible with Windows/Linux)
+   - **ext2/ext3/ext4** (Linux filesystems - requires e2fsprogs package)
+   - **NTFS** (Windows filesystem - requires fusefs-ntfs package)
 5. Confirm the operation
 
-**Warning**: Formatting will destroy all data on the partition!
+**Important Notes:**
+- **Warning**: Formatting will destroy all data on the partition!
+- ext2/ext3/ext4 formatting requires: `pkg install e2fsprogs`
+- NTFS formatting requires: `pkg install fusefs-ntfs`
+- If required packages are missing, you'll see an error message with installation instructions
+- ZFS pools must be created using the `zpool create` command directly
 
 #### Refreshing the Disk List
 Click the "Refresh" button in the toolbar to rescan all disks.
@@ -251,7 +272,7 @@ https://github.com/pgsdf/pgpart
 Planned features for future releases:
 
 - [x] Partition resizing with visual drag handles ✅ **IMPLEMENTED**
-- [ ] Support for more filesystems (ext2/3/4, NTFS)
+- [x] Support for more filesystems (ext2/3/4, NTFS) ✅ **IMPLEMENTED**
 - [ ] Partition copying and moving
 - [ ] Detailed disk information (SMART status)
 - [ ] Batch operations
