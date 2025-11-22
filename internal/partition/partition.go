@@ -225,10 +225,36 @@ func getMountPoint(partName string) (string, error) {
 
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
-		if strings.Contains(line, "/dev/"+partName) {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// FreeBSD mount format: /dev/ada0p2 on / (ufs, local, journaled soft-updates)
+		// Look for the partition name with or without /dev/ prefix
+		if strings.Contains(line, "/dev/"+partName) || strings.Contains(line, partName) {
+			// Split and look for "on" keyword
 			parts := strings.Fields(line)
+			for i, part := range parts {
+				if part == "on" && i+1 < len(parts) {
+					// The mount point is right after "on"
+					mountPoint := parts[i+1]
+					// Remove any trailing parenthesis or other characters
+					if idx := strings.Index(mountPoint, "("); idx > 0 {
+						mountPoint = mountPoint[:idx]
+					}
+					return mountPoint, nil
+				}
+			}
+
+			// Fallback: try old method (assume mount point is at index 2)
 			if len(parts) >= 3 {
-				return parts[2], nil
+				mountPoint := parts[2]
+				// Clean up the mount point
+				if idx := strings.Index(mountPoint, "("); idx > 0 {
+					mountPoint = mountPoint[:idx]
+				}
+				return mountPoint, nil
 			}
 		}
 	}

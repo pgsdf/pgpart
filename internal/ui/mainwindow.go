@@ -206,10 +206,14 @@ func (mw *MainWindow) createPartitionCard(part partition.Partition) *fyne.Contai
 	typeLabel := widget.NewLabel(fmt.Sprintf("Type: %s", part.Type))
 	sizeLabel := widget.NewLabel(fmt.Sprintf("Size: %s", partition.FormatBytes(part.Size*512)))
 	fsLabel := widget.NewLabel(fmt.Sprintf("Filesystem: %s", part.FileSystem))
-	mountLabel := widget.NewLabel(fmt.Sprintf("Mount: %s", part.MountPoint))
 
-	if part.MountPoint == "" {
-		mountLabel.SetText("Mount: (not mounted)")
+	var mountLabel *widget.Label
+	if part.MountPoint != "" {
+		mountLabel = widget.NewLabel(fmt.Sprintf("Mount: %s", part.MountPoint))
+		mountLabel.TextStyle = fyne.TextStyle{Bold: true}
+	} else {
+		mountLabel = widget.NewLabel("Mount: (not mounted)")
+		mountLabel.TextStyle = fyne.TextStyle{Italic: true}
 	}
 
 	card := container.NewVBox(
