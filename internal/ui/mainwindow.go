@@ -40,30 +40,29 @@ func NewMainWindow(app fyne.App) *MainWindow {
 	return mw
 }
 
-// createToolbarButton creates a toolbar button with an icon and tooltip
-func (mw *MainWindow) createToolbarButton(icon fyne.Resource, tooltip string, tapped func()) *widget.Button {
-	btn := widget.NewButtonWithIcon("", icon, tapped)
+// createToolbarButton creates a toolbar button with an icon and text
+func (mw *MainWindow) createToolbarButton(icon fyne.Resource, text string, tapped func()) *widget.Button {
+	btn := widget.NewButtonWithIcon(text, icon, tapped)
 	btn.Importance = widget.LowImportance
-	btn.SetToolTip(tooltip)
 	return btn
 }
 
 func (mw *MainWindow) setupUI() {
 	mw.infoLabel = widget.NewLabel("Select a disk to view partitions")
 
-	// Create toolbar buttons with tooltips
-	undoBtn := mw.createToolbarButton(theme.NavigateBackIcon(), "Undo last operation", mw.performUndo)
-	redoBtn := mw.createToolbarButton(theme.NavigateNextIcon(), "Redo previously undone operation", mw.performRedo)
-	refreshBtn := mw.createToolbarButton(theme.ViewRefreshIcon(), "Refresh disk list", mw.refreshDisks)
-	infoBtn := mw.createToolbarButton(theme.InfoIcon(), "Show detailed disk information", mw.showDiskInfo)
-	newTableBtn := mw.createToolbarButton(theme.StorageIcon(), "Create new partition table", mw.showNewPartitionTableDialog)
-	newPartBtn := mw.createToolbarButton(theme.ContentAddIcon(), "Create new partition", mw.showNewPartitionDialog)
-	copyBtn := mw.createToolbarButton(theme.ContentCopyIcon(), "Copy partition", mw.showCopyDialog)
-	moveBtn := mw.createToolbarButton(theme.NavigateNextIcon(), "Move partition", mw.showMoveDialog)
-	resizeBtn := mw.createToolbarButton(theme.ZoomInIcon(), "Resize partition", mw.showResizeDialog)
-	deleteBtn := mw.createToolbarButton(theme.DeleteIcon(), "Delete partition", mw.showDeletePartitionDialog)
-	formatBtn := mw.createToolbarButton(theme.DocumentCreateIcon(), "Format partition", mw.showFormatDialog)
-	batchBtn := mw.createToolbarButton(theme.ListIcon(), "Batch operations", mw.showBatchDialog)
+	// Create toolbar buttons with labels
+	undoBtn := mw.createToolbarButton(theme.NavigateBackIcon(), "Undo", mw.performUndo)
+	redoBtn := mw.createToolbarButton(theme.NavigateNextIcon(), "Redo", mw.performRedo)
+	refreshBtn := mw.createToolbarButton(theme.ViewRefreshIcon(), "Refresh", mw.refreshDisks)
+	infoBtn := mw.createToolbarButton(theme.InfoIcon(), "Disk Info", mw.showDiskInfo)
+	newTableBtn := mw.createToolbarButton(theme.StorageIcon(), "New Table", mw.showNewPartitionTableDialog)
+	newPartBtn := mw.createToolbarButton(theme.ContentAddIcon(), "New Partition", mw.showNewPartitionDialog)
+	copyBtn := mw.createToolbarButton(theme.ContentCopyIcon(), "Copy", mw.showCopyDialog)
+	moveBtn := mw.createToolbarButton(theme.NavigateNextIcon(), "Move", mw.showMoveDialog)
+	resizeBtn := mw.createToolbarButton(theme.ZoomInIcon(), "Resize", mw.showResizeDialog)
+	deleteBtn := mw.createToolbarButton(theme.DeleteIcon(), "Delete", mw.showDeletePartitionDialog)
+	formatBtn := mw.createToolbarButton(theme.DocumentCreateIcon(), "Format", mw.showFormatDialog)
+	batchBtn := mw.createToolbarButton(theme.ListIcon(), "Batch", mw.showBatchDialog)
 
 	// Create toolbar with buttons
 	toolbar := container.NewHBox(
