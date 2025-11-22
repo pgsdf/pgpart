@@ -189,10 +189,15 @@ func getPartitionColor(fsType string) color.Color {
 		return color.RGBA{R: 255, G: 165, B: 0, A: 255} // Orange
 	case "swap":
 		return color.RGBA{R: 220, G: 20, B: 60, A: 255} // Crimson Red
-	case "ext4":
-		return color.RGBA{R: 147, G: 51, B: 234, A: 255} // Purple
-	default:
+	case "ext2", "ext3", "ext4":
+		return color.RGBA{R: 147, G: 51, B: 234, A: 255} // Purple (Linux ext family)
+	case "NTFS":
+		return color.RGBA{R: 0, G: 123, B: 255, A: 255} // Bright Blue (Windows)
+	case "unknown":
 		return color.RGBA{R: 169, G: 169, B: 169, A: 255} // Dark Gray
+	default:
+		// For any other filesystem types, use a neutral color
+		return color.RGBA{R: 120, G: 120, B: 120, A: 255} // Medium Gray
 	}
 }
 
@@ -475,8 +480,9 @@ func (mw *MainWindow) createColorLegend() *fyne.Container {
 		createLegendItem("ZFS", "ZFS"),
 		createLegendItem("FAT32", "FAT32"),
 		createLegendItem("swap", "swap"),
-		createLegendItem("ext4", "ext4"),
-		createLegendItem("Unknown", ""),
+		createLegendItem("ext2/3/4", "ext4"),
+		createLegendItem("NTFS", "NTFS"),
+		createLegendItem("Unknown", "unknown"),
 	)
 
 	return container.NewVBox(

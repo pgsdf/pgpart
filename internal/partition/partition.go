@@ -152,23 +152,65 @@ func parseGpartShow(output string) ([]Partition, error) {
 }
 
 func getFileSystem(partName string) (string, error) {
-	cmd := exec.Command("file", "-s", "/dev/"+partName)
+	// Try fstyp first (FreeBSD native filesystem type detection)
+	cmd := exec.Command("fstyp", "/dev/"+partName)
 	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
+
+	if err == nil && len(output) > 0 {
+		fsType := strings.TrimSpace(string(output))
+		// Map fstyp output to our display names
+		switch {
+		case strings.HasPrefix(fsType, "ufs"):
+			return "UFS", nil
+		case strings.HasPrefix(fsType, "zfs"):
+			return "ZFS", nil
+		case strings.Contains(fsType, "msdos") || strings.Contains(fsType, "fat"):
+			return "FAT32", nil
+		case strings.HasPrefix(fsType, "ext2"):
+			return "ext2", nil
+		case strings.HasPrefix(fsType, "ext3"):
+			return "ext3", nil
+		case strings.HasPrefix(fsType, "ext4"):
+			return "ext4", nil
+		case strings.Contains(fsType, "ntfs"):
+			return "NTFS", nil
+		default:
+			// Return the raw fstyp output if it's something we recognize
+			if fsType != "" {
+				return fsType, nil
+			}
+		}
 	}
 
-	outStr := string(output)
-	if strings.Contains(outStr, "UFS") {
+	// Fallback to file command
+	cmd = exec.Command("file", "-s", "/dev/"+partName)
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return "unknown", nil
+	}
+
+	outStr := strings.ToLower(string(output))
+
+	// Check for various filesystem signatures
+	switch {
+	case strings.Contains(outStr, "unix fast file") || strings.Contains(outStr, "ufs"):
 		return "UFS", nil
-	} else if strings.Contains(outStr, "ZFS") {
+	case strings.Contains(outStr, "zfs"):
 		return "ZFS", nil
-	} else if strings.Contains(outStr, "FAT") {
+	case strings.Contains(outStr, "fat") || strings.Contains(outStr, "msdos"):
 		return "FAT32", nil
-	} else if strings.Contains(outStr, "ext2") || strings.Contains(outStr, "ext3") || strings.Contains(outStr, "ext4") {
+	case strings.Contains(outStr, "ext4"):
 		return "ext4", nil
-	} else if strings.Contains(outStr, "swap") {
+	case strings.Contains(outStr, "ext3"):
+		return "ext3", nil
+	case strings.Contains(outStr, "ext2"):
+		return "ext2", nil
+	case strings.Contains(outStr, "swap"):
 		return "swap", nil
+	case strings.Contains(outStr, "ntfs"):
+		return "NTFS", nil
+	case strings.Contains(outStr, "boot") || strings.Contains(outStr, "data"):
+		return "unknown", nil
 	}
 
 	return "unknown", nil
