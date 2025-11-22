@@ -40,31 +40,50 @@ func NewMainWindow(app fyne.App) *MainWindow {
 	return mw
 }
 
+// createToolbarButton creates a toolbar button with an icon and tooltip
+func (mw *MainWindow) createToolbarButton(icon fyne.Resource, tooltip string, tapped func()) *widget.Button {
+	btn := widget.NewButtonWithIcon("", icon, tapped)
+	btn.Importance = widget.LowImportance
+	btn.SetToolTip(tooltip)
+	return btn
+}
+
 func (mw *MainWindow) setupUI() {
 	mw.infoLabel = widget.NewLabel("Select a disk to view partitions")
 
-	// Create undo/redo toolbar actions (will be enabled/disabled dynamically)
-	undoAction := widget.NewToolbarAction(theme.NavigateBackIcon(), mw.performUndo)
-	redoAction := widget.NewToolbarAction(theme.NavigateNextIcon(), mw.performRedo)
+	// Create toolbar buttons with tooltips
+	undoBtn := mw.createToolbarButton(theme.NavigateBackIcon(), "Undo last operation", mw.performUndo)
+	redoBtn := mw.createToolbarButton(theme.NavigateNextIcon(), "Redo previously undone operation", mw.performRedo)
+	refreshBtn := mw.createToolbarButton(theme.ViewRefreshIcon(), "Refresh disk list", mw.refreshDisks)
+	infoBtn := mw.createToolbarButton(theme.InfoIcon(), "Show detailed disk information", mw.showDiskInfo)
+	newTableBtn := mw.createToolbarButton(theme.StorageIcon(), "Create new partition table", mw.showNewPartitionTableDialog)
+	newPartBtn := mw.createToolbarButton(theme.ContentAddIcon(), "Create new partition", mw.showNewPartitionDialog)
+	copyBtn := mw.createToolbarButton(theme.ContentCopyIcon(), "Copy partition", mw.showCopyDialog)
+	moveBtn := mw.createToolbarButton(theme.NavigateNextIcon(), "Move partition", mw.showMoveDialog)
+	resizeBtn := mw.createToolbarButton(theme.ZoomInIcon(), "Resize partition", mw.showResizeDialog)
+	deleteBtn := mw.createToolbarButton(theme.DeleteIcon(), "Delete partition", mw.showDeletePartitionDialog)
+	formatBtn := mw.createToolbarButton(theme.DocumentCreateIcon(), "Format partition", mw.showFormatDialog)
+	batchBtn := mw.createToolbarButton(theme.ListIcon(), "Batch operations", mw.showBatchDialog)
 
-	toolbar := widget.NewToolbar(
-		undoAction,
-		redoAction,
-		widget.NewToolbarSeparator(),
-		widget.NewToolbarAction(theme.ViewRefreshIcon(), mw.refreshDisks),
-		widget.NewToolbarAction(theme.InfoIcon(), mw.showDiskInfo),
-		widget.NewToolbarSeparator(),
-		widget.NewToolbarAction(theme.StorageIcon(), mw.showNewPartitionTableDialog),
-		widget.NewToolbarAction(theme.ContentAddIcon(), mw.showNewPartitionDialog),
-		widget.NewToolbarSeparator(),
-		widget.NewToolbarAction(theme.ContentCopyIcon(), mw.showCopyDialog),
-		widget.NewToolbarAction(theme.NavigateNextIcon(), mw.showMoveDialog),
-		widget.NewToolbarSeparator(),
-		widget.NewToolbarAction(theme.ZoomInIcon(), mw.showResizeDialog),
-		widget.NewToolbarAction(theme.DeleteIcon(), mw.showDeletePartitionDialog),
-		widget.NewToolbarAction(theme.DocumentCreateIcon(), mw.showFormatDialog),
-		widget.NewToolbarSeparator(),
-		widget.NewToolbarAction(theme.ListIcon(), mw.showBatchDialog),
+	// Create toolbar with buttons
+	toolbar := container.NewHBox(
+		undoBtn,
+		redoBtn,
+		widget.NewSeparator(),
+		refreshBtn,
+		infoBtn,
+		widget.NewSeparator(),
+		newTableBtn,
+		newPartBtn,
+		widget.NewSeparator(),
+		copyBtn,
+		moveBtn,
+		widget.NewSeparator(),
+		resizeBtn,
+		deleteBtn,
+		formatBtn,
+		widget.NewSeparator(),
+		batchBtn,
 	)
 
 	mw.diskList = widget.NewList(
