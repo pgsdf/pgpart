@@ -47,6 +47,12 @@ func (c *CLI) Run() int {
 		return c.infoCommand()
 	case "align":
 		return c.alignCommand()
+	case "attr-list":
+		return c.attrListCommand()
+	case "attr-set":
+		return c.attrSetCommand()
+	case "attr-unset":
+		return c.attrUnsetCommand()
 	case "help", "-h", "--help":
 		c.printUsage()
 		return 0
@@ -74,6 +80,11 @@ func (c *CLI) printUsage() {
 	fmt.Println("  copy <source> <dest>    Copy partition data")
 	fmt.Println("  info <disk>             Show detailed disk information")
 	fmt.Println("  align <disk|partition>  Check partition alignment")
+	fmt.Println("  attr-list <partition>   List GPT attributes")
+	fmt.Println("  attr-set <partition> <attribute>")
+	fmt.Println("                          Set a GPT attribute")
+	fmt.Println("  attr-unset <partition> <attribute>")
+	fmt.Println("                          Unset a GPT attribute")
 	fmt.Println("  help                    Show this help message")
 	fmt.Println("\nOptions:")
 	fmt.Println("  -gui                    Launch graphical interface (default if no command)")
@@ -86,6 +97,9 @@ func (c *CLI) printUsage() {
 	fmt.Println("  pgpart copy ada0p1 ada0p2")
 	fmt.Println("  pgpart info ada0")
 	fmt.Println("  pgpart align ada0")
+	fmt.Println("  pgpart attr-list ada0p1")
+	fmt.Println("  pgpart attr-set ada0p1 bootme")
+	fmt.Println("  pgpart attr-unset ada0p1 bootme")
 	fmt.Println("\nNote: Most operations require root privileges")
 }
 
@@ -484,6 +498,146 @@ func (c *CLI) alignCommand() int {
 	if misaligned > 0 {
 		fmt.Println("\nRecommendation: Consider recreating misaligned partitions for better performance")
 		return 1
+	}
+
+	return 0
+}
+
+// attrListCommand lists GPT attributes for a partition
+func (c *CLI) attrListCommand() int {
+	fs := flag.NewFlagSet("attr-list", flag.ExitOnError)
+	if err := fs.Parse(c.args[2:]); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing arguments: %v\n", err)
+		return 1
+	}
+
+	args := fs.Args()
+	if len(args) < 1 {
+		fmt.Fprintln(os.Stderr, "Usage: pgpart attr-list <partition>")
+		fmt.Fprintln(os.Stderr, "Examples:")
+		fmt.Fprintln(os.Stderr, "  pgpart attr-list ada0p1")
+		fmt.Fprintln(os.Stderr, "  pgpart attr-list nvd0p2")
+		return 1
+	}
+
+	partName := args[0]
+
+	// Validate partition supports attributes
+	if err := partition.ValidatePartitionForAttributes(partName); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return 1
+	}
+
+	// Get attributes
+	info, err := partition.GetPartitionAttributes(partName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting attributes: %v\n", err)
+		return 1
+	}
+
+	// Display attributes
+	fmt.Println(partition.FormatAttributeInfo(info))
+
+	// Also show available attributes
+	fmt.Println("\nAvailable attributes:")
+	for _, attr := range partition.GetAvailableAttributes() {
+		fmt.Printf("  %-12s - %s\n", attr.Name, attr.Description)
+	}
+
+	return 0
+}
+
+// attrSetCommand sets a GPT attribute on a partition
+func (c *CLI) attrSetCommand() int {
+	fs := flag.NewFlagSet("attr-set", flag.ExitOnError)
+	if err := fs.Parse(c.args[2:]); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing arguments: %v\n", err)
+		return 1
+	}
+
+	args := fs.Args()
+	if len(args) < 2 {
+		fmt.Fprintln(os.Stderr, "Usage: pgpart attr-set <partition> <attribute>")
+		fmt.Fprintln(os.Stderr, "\nAvailable attributes:")
+		for _, attr := range partition.GetAvailableAttributes() {
+			fmt.Fprintf(os.Stderr, "  %-12s - %s\n", attr.Name, attr.Description)
+		}
+		fmt.Fprintln(os.Stderr, "\nExamples:")
+		fmt.Fprintln(os.Stderr, "  pgpart attr-set ada0p1 bootme")
+		fmt.Fprintln(os.Stderr, "  pgpart attr-set nvd0p2 bootonce")
+		return 1
+	}
+
+	partName := args[0]
+	attribute := args[1]
+
+	// Validate partition supports attributes
+	if err := partition.ValidatePartitionForAttributes(partName); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return 1
+	}
+
+	// Set attribute
+	if err := partition.SetPartitionAttribute(partName, attribute); err != nil {
+		fmt.Fprintf(os.Stderr, "Error setting attribute: %v\n", err)
+		return 1
+	}
+
+	fmt.Printf("Successfully set attribute '%s' on %s\n", attribute, partName)
+
+	// Show current attributes
+	info, err := partition.GetPartitionAttributes(partName)
+	if err == nil {
+		fmt.Println()
+		fmt.Println(partition.FormatAttributeInfo(info))
+	}
+
+	return 0
+}
+
+// attrUnsetCommand unsets a GPT attribute on a partition
+func (c *CLI) attrUnsetCommand() int {
+	fs := flag.NewFlagSet("attr-unset", flag.ExitOnError)
+	if err := fs.Parse(c.args[2:]); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing arguments: %v\n", err)
+		return 1
+	}
+
+	args := fs.Args()
+	if len(args) < 2 {
+		fmt.Fprintln(os.Stderr, "Usage: pgpart attr-unset <partition> <attribute>")
+		fmt.Fprintln(os.Stderr, "\nAvailable attributes:")
+		for _, attr := range partition.GetAvailableAttributes() {
+			fmt.Fprintf(os.Stderr, "  %-12s - %s\n", attr.Name, attr.Description)
+		}
+		fmt.Fprintln(os.Stderr, "\nExamples:")
+		fmt.Fprintln(os.Stderr, "  pgpart attr-unset ada0p1 bootme")
+		fmt.Fprintln(os.Stderr, "  pgpart attr-unset nvd0p2 bootonce")
+		return 1
+	}
+
+	partName := args[0]
+	attribute := args[1]
+
+	// Validate partition supports attributes
+	if err := partition.ValidatePartitionForAttributes(partName); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return 1
+	}
+
+	// Unset attribute
+	if err := partition.UnsetPartitionAttribute(partName, attribute); err != nil {
+		fmt.Fprintf(os.Stderr, "Error unsetting attribute: %v\n", err)
+		return 1
+	}
+
+	fmt.Printf("Successfully unset attribute '%s' on %s\n", attribute, partName)
+
+	// Show current attributes
+	info, err := partition.GetPartitionAttributes(partName)
+	if err == nil {
+		fmt.Println()
+		fmt.Println(partition.FormatAttributeInfo(info))
 	}
 
 	return 0

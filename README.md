@@ -41,6 +41,17 @@ A modern, graphical partition manager for FreeBSD and GhostBSD, similar to GPart
   - Redo previously undone operations
   - Clear indication of which operations can be reversed
   - Confirmation dialogs before undo/redo execution
+- **GPT Attribute Management**:
+  - View and edit GPT partition attributes
+  - Set/unset bootable flag (`bootme`)
+  - Configure boot-once flag for testing (`bootonce`)
+  - Manage boot failure indicators (`bootfailed`)
+  - Full attribute management via CLI and GUI
+- **Partition Alignment Optimization**:
+  - Check partition alignment for optimal performance
+  - Detect misaligned partitions on SSD and HDD
+  - Recommendations for 1 MiB or 4 MiB alignment
+  - Alignment analysis for entire disks or individual partitions
 - **Modern GUI**: Clean, intuitive interface using Fyne
 
 ## Screenshots
@@ -243,6 +254,43 @@ Displays alignment status for each partition:
 - Misaligned partitions cause performance degradation
 - 1 MiB alignment recommended for optimal performance
 
+#### Manage GPT Attributes
+GPT partitions support special attributes that control boot behavior and partition properties.
+
+**List current attributes:**
+```bash
+pgpart attr-list <partition>
+```
+
+**Set an attribute:**
+```bash
+pgpart attr-set <partition> <attribute>
+```
+
+**Unset an attribute:**
+```bash
+pgpart attr-unset <partition> <attribute>
+```
+
+**Available Attributes:**
+- `bootme` - Platform required/system partition (marks partition as bootable)
+- `bootonce` - Boot from this partition once, then clear the flag
+- `bootfailed` - Indicates partition failed to boot
+- `noblockio` - Disable block I/O protocol for this partition
+
+Examples:
+```bash
+pgpart attr-list ada0p1             # List all attributes for ada0p1
+pgpart attr-set ada0p1 bootme       # Mark ada0p1 as bootable
+pgpart attr-unset ada0p1 bootonce   # Remove bootonce flag
+```
+
+**Important Notes:**
+- GPT attributes are only supported on GPT-partitioned disks
+- MBR and BSD disklabel partitions do not support these attributes
+- The `bootme` attribute is commonly used to mark EFI system partitions
+- Setting `bootonce` is useful for testing new boot configurations
+
 ### GUI Basic Operations
 
 #### Viewing Disks and Partitions
@@ -443,6 +491,7 @@ The application is organized into the following packages:
   - `batch.go`: Batch operation queue management and execution
   - `history.go`: Operation history tracking and undo/redo management
   - `alignment.go`: Partition alignment checking and optimization
+  - `attributes.go`: GPT partition attribute management
 - `internal/ui`: User interface components
   - `mainwindow.go`: Main application window and UI logic
   - `partitionview.go`: Interactive partition visualization with drag handles
@@ -450,6 +499,7 @@ The application is organized into the following packages:
   - `copydialog.go`: Copy and move partition dialogs with progress bars
   - `diskinfodialog.go`: Detailed disk information display with SMART data
   - `batchdialog.go`: Batch operations queue manager with execution controls
+  - `attributesdialog.go`: GPT attribute editing dialog with checkboxes
 - `internal/cli`: Command-line interface for scripting
   - `cli.go`: CLI command parser and handlers for all operations
 
@@ -498,14 +548,16 @@ pgpart/
 │   │   ├── diskinfo.go        # SMART status and disk info
 │   │   ├── batch.go           # Batch operation queue
 │   │   ├── history.go         # Undo/redo history tracking
-│   │   └── alignment.go       # Partition alignment checking
+│   │   ├── alignment.go       # Partition alignment checking
+│   │   └── attributes.go      # GPT attribute management
 │   ├── ui/
 │   │   ├── mainwindow.go      # Main UI
 │   │   ├── partitionview.go   # Partition visualization
 │   │   ├── resizedialog.go    # Resize dialog
 │   │   ├── copydialog.go      # Copy/move dialogs
 │   │   ├── diskinfodialog.go  # Disk information dialog
-│   │   └── batchdialog.go     # Batch operations manager
+│   │   ├── batchdialog.go     # Batch operations manager
+│   │   └── attributesdialog.go # GPT attributes editor
 │   └── cli/
 │       └── cli.go             # Command-line interface
 ├── go.mod                     # Go module definition
