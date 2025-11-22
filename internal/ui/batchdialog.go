@@ -241,9 +241,15 @@ func (bd *BatchDialog) showAddDeleteDialog() {
 
 	dialog.ShowForm("Add Delete Operation", "Add", "Cancel", form.Items, func(ok bool) {
 		if ok && partSelect.Selected != "" {
+			disk, index, err := partition.ParsePartitionName(partSelect.Selected)
+			if err != nil {
+				dialog.ShowError(err, bd.window)
+				return
+			}
 			op := &partition.BatchOperation{
 				Type:        partition.OpDelete,
-				Partition:   partSelect.Selected,
+				Disk:        disk,
+				Index:       index,
 				Description: fmt.Sprintf("Delete partition %s", partSelect.Selected),
 			}
 			bd.queue.AddOperation(op)
@@ -283,10 +289,16 @@ func (bd *BatchDialog) showAddResizeDialog() {
 				dialog.ShowError(fmt.Errorf("invalid size"), bd.window)
 				return
 			}
+			disk, index, err := partition.ParsePartitionName(partSelect.Selected)
+			if err != nil {
+				dialog.ShowError(err, bd.window)
+				return
+			}
 			sizeBytes := uint64(sizeGB * 1024 * 1024 * 1024)
 			op := &partition.BatchOperation{
 				Type:        partition.OpResize,
-				Partition:   partSelect.Selected,
+				Disk:        disk,
+				Index:       index,
 				Size:        sizeBytes,
 				Description: fmt.Sprintf("Resize %s to %.2f GB", partSelect.Selected, sizeGB),
 			}
