@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"image/color"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
