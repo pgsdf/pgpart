@@ -21,12 +21,16 @@ type MainWindow struct {
 	selectedDisk  int
 	partitionView *fyne.Container
 	infoLabel     *widget.Label
+	history       *partition.OperationHistory
+	undoBtn       *widget.Button
+	redoBtn       *widget.Button
 }
 
 func NewMainWindow(app fyne.App) *MainWindow {
 	mw := &MainWindow{
 		window:       app.NewWindow("PGPart - Partition Manager for FreeBSD"),
 		selectedDisk: -1,
+		history:      partition.NewOperationHistory(),
 	}
 
 	mw.window.Resize(fyne.NewSize(900, 600))
@@ -39,7 +43,14 @@ func NewMainWindow(app fyne.App) *MainWindow {
 func (mw *MainWindow) setupUI() {
 	mw.infoLabel = widget.NewLabel("Select a disk to view partitions")
 
+	// Create undo/redo toolbar actions (will be enabled/disabled dynamically)
+	undoAction := widget.NewToolbarAction(theme.NavigateBackIcon(), mw.performUndo)
+	redoAction := widget.NewToolbarAction(theme.NavigateNextIcon(), mw.performRedo)
+
 	toolbar := widget.NewToolbar(
+		undoAction,
+		redoAction,
+		widget.NewToolbarSeparator(),
 		widget.NewToolbarAction(theme.ViewRefreshIcon(), mw.refreshDisks),
 		widget.NewToolbarAction(theme.InfoIcon(), mw.showDiskInfo),
 		widget.NewToolbarSeparator(),
@@ -545,6 +556,116 @@ func (mw *MainWindow) showDiskInfo() {
 func (mw *MainWindow) showBatchDialog() {
 	batchDialog := NewBatchDialog(mw.window, mw.disks)
 	batchDialog.Show()
+}
+
+func (mw *MainWindow) performUndo() {
+	if !mw.history.CanUndo() {
+		dialog.ShowInformation("Cannot Undo", "No reversible operations to undo", mw.window)
+		return
+	}
+
+	entry, err := mw.history.GetUndoOperation()
+	if err != nil {
+		dialog.ShowError(err, mw.window)
+		return
+	}
+
+	// Confirm undo
+	entryID := entry.ID
+	oldPos := mw.history.GetCurrentPosition()
+	dialog.ShowConfirm("Undo Operation",
+		fmt.Sprintf("Undo: %s\n\nThis will reverse the operation.", entry.Description),
+		func(ok bool) {
+			if ok {
+				mw.executeUndo(entry)
+			} else {
+				// Restore the operation state if user cancels
+				mw.history.RestoreReversedState(entryID, false)
+				mw.history.RestorePosition(oldPos)
+			}
+		}, mw.window)
+}
+
+func (mw *MainWindow) executeUndo(entry *partition.HistoryEntry) {
+	var err error
+
+	switch entry.UndoOperation {
+	case "delete":
+		// Undo create by deleting the partition
+		err = partition.DeletePartition(entry.UndoDisk, entry.UndoIndex)
+
+	case "resize":
+		// Undo resize by resizing back
+		err = partition.ResizePartition(entry.UndoDisk, entry.UndoIndex, entry.UndoSize)
+
+	default:
+		err = fmt.Errorf("unknown undo operation: %s", entry.UndoOperation)
+	}
+
+	if err != nil {
+		dialog.ShowError(fmt.Errorf("undo failed: %v", err), mw.window)
+		// Restore the operation state
+		mw.history.RestoreReversedState(entry.ID, false)
+		mw.history.RestorePosition(mw.history.GetCurrentPosition() + 1)
+	} else {
+		dialog.ShowInformation("Undo Complete", fmt.Sprintf("Successfully undid: %s", entry.Description), mw.window)
+		mw.refreshDisks()
+	}
+}
+
+func (mw *MainWindow) performRedo() {
+	if !mw.history.CanRedo() {
+		dialog.ShowInformation("Cannot Redo", "No operations to redo", mw.window)
+		return
+	}
+
+	entry, err := mw.history.GetRedoOperation()
+	if err != nil {
+		dialog.ShowError(err, mw.window)
+		return
+	}
+
+	// Confirm redo
+	entryID := entry.ID
+	oldPos := mw.history.GetCurrentPosition()
+	dialog.ShowConfirm("Redo Operation",
+		fmt.Sprintf("Redo: %s\n\nThis will re-apply the operation.", entry.Description),
+		func(ok bool) {
+			if ok {
+				mw.executeRedo(entry)
+			} else {
+				// Restore the operation state if user cancels
+				mw.history.RestoreReversedState(entryID, true)
+				mw.history.RestorePosition(oldPos)
+			}
+		}, mw.window)
+}
+
+func (mw *MainWindow) executeRedo(entry *partition.HistoryEntry) {
+	var err error
+
+	switch entry.Operation {
+	case "create":
+		// Redo create
+		err = partition.CreatePartition(entry.Disk, entry.Size, entry.FSType)
+
+	case "resize":
+		// Redo resize
+		err = partition.ResizePartition(entry.Disk, entry.Index, entry.Size)
+
+	default:
+		err = fmt.Errorf("unknown redo operation: %s", entry.Operation)
+	}
+
+	if err != nil {
+		dialog.ShowError(fmt.Errorf("redo failed: %v", err), mw.window)
+		// Restore the operation state
+		mw.history.RestoreReversedState(entry.ID, true)
+		mw.history.RestorePosition(mw.history.GetCurrentPosition() - 1)
+	} else {
+		dialog.ShowInformation("Redo Complete", fmt.Sprintf("Successfully redid: %s", entry.Description), mw.window)
+		mw.refreshDisks()
+	}
 }
 
 func (mw *MainWindow) Show() {

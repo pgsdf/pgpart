@@ -35,6 +35,12 @@ A modern, graphical partition manager for FreeBSD and GhostBSD, similar to GPart
   - Progress tracking across all operations
   - Stop on error or continue options
   - Review and manage operation queue before execution
+- **Undo/Redo Functionality**:
+  - Operation history tracking for all partition changes
+  - Undo reversible operations (create, resize)
+  - Redo previously undone operations
+  - Clear indication of which operations can be reversed
+  - Confirmation dialogs before undo/redo execution
 - **Modern GUI**: Clean, intuitive interface using Fyne
 
 ## Screenshots
@@ -273,6 +279,31 @@ Batch operations allow you to queue multiple partition operations and execute th
 - Always verify source/destination for copy operations
 - Use "Stop on error" for critical sequences where order matters
 
+#### Using Undo/Redo
+PGPart tracks partition operations and allows you to undo reversible changes:
+
+**Reversible Operations:**
+- **Create Partition** - Can be undone by deleting the created partition
+- **Resize Partition** - Can be undone by resizing back to original size
+
+**Non-Reversible Operations (data destructive):**
+- **Delete Partition** - Cannot restore deleted data
+- **Format Partition** - Cannot restore previous filesystem or data
+- **Copy Partition** - Cannot "uncopy" data
+- **Move Partition** - Cannot restore (source was deleted)
+
+**How to Use:**
+1. Click the **Undo** button (◀) in the toolbar to reverse the last reversible operation
+2. Click the **Redo** button (▶) to re-apply an undone operation
+3. Confirm the undo/redo action in the dialog that appears
+
+**Important Limitations:**
+- Undo only reverses structural changes, not data
+- Undoing a partition resize requires sufficient free space
+- Operation history is lost when you close the application
+- Some operations cannot be undone and are marked as such in history
+- Always backup important data before performing partition operations
+
 #### Refreshing the Disk List
 Click the "Refresh" button in the toolbar to rescan all disks.
 
@@ -287,6 +318,7 @@ The application is organized into the following packages:
   - `copy.go`: Partition copying and moving with progress tracking
   - `diskinfo.go`: Detailed disk information and SMART status retrieval
   - `batch.go`: Batch operation queue management and execution
+  - `history.go`: Operation history tracking and undo/redo management
 - `internal/ui`: User interface components
   - `mainwindow.go`: Main application window and UI logic
   - `partitionview.go`: Interactive partition visualization with drag handles
@@ -338,7 +370,8 @@ pgpart/
 │   │   ├── operations.go      # Partition operations
 │   │   ├── copy.go            # Partition copying and moving
 │   │   ├── diskinfo.go        # SMART status and disk info
-│   │   └── batch.go           # Batch operation queue
+│   │   ├── batch.go           # Batch operation queue
+│   │   └── history.go         # Undo/redo history tracking
 │   └── ui/
 │       ├── mainwindow.go      # Main UI
 │       ├── partitionview.go   # Partition visualization
@@ -399,7 +432,7 @@ Planned features for future releases:
 - [x] Partition copying and moving ✅ **IMPLEMENTED**
 - [x] Detailed disk information (SMART status) ✅ **IMPLEMENTED**
 - [x] Batch operations ✅ **IMPLEMENTED**
-- [ ] Undo/redo functionality
+- [x] Undo/redo functionality ✅ **IMPLEMENTED**
 - [ ] Command-line interface for scripting
 - [ ] Partition alignment optimization
 - [ ] GPT attribute editing
