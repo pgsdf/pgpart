@@ -62,6 +62,7 @@ func (mw *MainWindow) setupUI() {
 	resizeBtn := mw.createToolbarButton(theme.ZoomInIcon(), "Resize", mw.showResizeDialog)
 	deleteBtn := mw.createToolbarButton(theme.DeleteIcon(), "Delete", mw.showDeletePartitionDialog)
 	formatBtn := mw.createToolbarButton(theme.DocumentCreateIcon(), "Format", mw.showFormatDialog)
+	attrBtn := mw.createToolbarButton(theme.SettingsIcon(), "Attributes", mw.showAttributesDialog)
 	batchBtn := mw.createToolbarButton(theme.ListIcon(), "Batch", mw.showBatchDialog)
 
 	// Create toolbar with buttons
@@ -81,6 +82,7 @@ func (mw *MainWindow) setupUI() {
 		resizeBtn,
 		deleteBtn,
 		formatBtn,
+		attrBtn,
 		widget.NewSeparator(),
 		batchBtn,
 	)
@@ -684,6 +686,64 @@ func (mw *MainWindow) executeRedo(entry *partition.HistoryEntry) {
 		dialog.ShowInformation("Redo Complete", fmt.Sprintf("Successfully redid: %s", entry.Description), mw.window)
 		mw.refreshDisks()
 	}
+}
+
+func (mw *MainWindow) showAttributesDialog() {
+	if mw.selectedDisk < 0 {
+		dialog.ShowInformation("No Disk Selected", "Please select a disk first", mw.window)
+		return
+	}
+
+	disk := mw.disks[mw.selectedDisk]
+
+	if len(disk.Partitions) == 0 {
+		dialog.ShowInformation("No Partitions", "This disk has no partitions", mw.window)
+		return
+	}
+
+	// Create partition selection
+	partNames := make([]string, len(disk.Partitions))
+	for i, part := range disk.Partitions {
+		partNames[i] = part.Name
+	}
+
+	partSelect := widget.NewSelect(partNames, nil)
+
+	formContent := container.NewVBox(
+		widget.NewForm(
+			widget.NewFormItem("Partition", partSelect),
+		),
+		widget.NewLabel("Select a partition to edit its GPT attributes"),
+	)
+
+	customDialog := dialog.NewCustomConfirm("Edit GPT Attributes", "Edit", "Cancel", formContent,
+		func(ok bool) {
+			if !ok {
+				return
+			}
+
+			if partSelect.Selected == "" {
+				dialog.ShowError(fmt.Errorf("Please select a partition"), mw.window)
+				return
+			}
+
+			// Find the selected partition
+			var selectedPart *partition.Partition
+			for i := range disk.Partitions {
+				if disk.Partitions[i].Name == partSelect.Selected {
+					selectedPart = &disk.Partitions[i]
+					break
+				}
+			}
+
+			if selectedPart != nil {
+				// Show the attributes dialog
+				attrDialog := NewAttributesDialog(mw.window, selectedPart, mw.refreshDisks)
+				attrDialog.Show()
+			}
+		}, mw.window)
+
+	customDialog.Show()
 }
 
 func (mw *MainWindow) Show() {
