@@ -15,7 +15,10 @@ A modern, graphical partition manager for FreeBSD and GhostBSD, similar to GPart
   - Delete partitions
   - **Format partitions**: UFS, FAT32, ext2, ext3, ext4, NTFS
   - **Resize partitions with visual drag handles or slider interface**
+  - **Copy partitions**: Clone partition data to another partition
+  - **Move partitions**: Copy partition and delete source
   - Interactive resize dialog with min/max validation
+  - Progress monitoring for long operations
 - **Filesystem Support**:
   - **Detection**: UFS, ZFS, FAT32, swap, ext2, ext3, ext4, NTFS
   - **Formatting**: UFS (native), FAT32 (native), ext2/3/4 (requires e2fsprogs), NTFS (requires fusefs-ntfs)
@@ -169,6 +172,37 @@ sudo pgpart
 - If required packages are missing, you'll see an error message with installation instructions
 - ZFS pools must be created using the `zpool create` command directly
 
+#### Copying a Partition
+1. Click the "Copy Partition" button in the toolbar
+2. Select the source partition (partition to copy from)
+3. Select the destination partition (where to copy to)
+4. Review the warning - destination data will be overwritten
+5. Confirm the operation
+6. Monitor the progress bar during the copy operation
+
+**Important Notes:**
+- Destination partition must be equal or larger than source
+- All data on the destination partition will be destroyed
+- The operation may take several minutes depending on partition size
+- Progress is shown with percentage and elapsed time
+- Source partition remains unchanged (read-only operation)
+
+#### Moving a Partition
+1. Click the "Move Partition" button in the toolbar
+2. Select the source partition (partition to move)
+3. Select the destination partition (where to move to)
+4. Review the warning - this will copy data and delete source
+5. Confirm the operation
+6. Monitor the progress during the move operation
+
+**Important Notes:**
+- Move = Copy + Delete source partition
+- Destination must be equal or larger than source
+- Source partition will be deleted after successful copy
+- All data on destination will be destroyed
+- **Cannot be undone** - ensure you have backups!
+- Operation may take several minutes
+
 #### Refreshing the Disk List
 Click the "Refresh" button in the toolbar to rescan all disks.
 
@@ -180,10 +214,12 @@ The application is organized into the following packages:
 - `internal/partition`: Core partition detection and management
   - `partition.go`: Disk and partition detection using geom/gpart
   - `operations.go`: Partition operations (create, delete, format, resize)
+  - `copy.go`: Partition copying and moving with progress tracking
 - `internal/ui`: User interface components
   - `mainwindow.go`: Main application window and UI logic
   - `partitionview.go`: Interactive partition visualization with drag handles
   - `resizedialog.go`: Advanced resize dialog with slider and validation
+  - `copydialog.go`: Copy and move partition dialogs with progress bars
 
 ## BSD Tools Used
 
@@ -195,6 +231,10 @@ PGPart uses the following FreeBSD system utilities:
 - `newfs_msdos`: FAT filesystem creation
 - `mount`: Mount point detection
 - `file`: Filesystem type detection
+- `fstyp`: FreeBSD native filesystem detection
+- `diskinfo`: Partition size information
+- `dd`: Disk data copying (with progress monitoring)
+- `sha256`: Partition data verification
 
 ## Limitations
 
@@ -273,7 +313,7 @@ Planned features for future releases:
 
 - [x] Partition resizing with visual drag handles ✅ **IMPLEMENTED**
 - [x] Support for more filesystems (ext2/3/4, NTFS) ✅ **IMPLEMENTED**
-- [ ] Partition copying and moving
+- [x] Partition copying and moving ✅ **IMPLEMENTED**
 - [ ] Detailed disk information (SMART status)
 - [ ] Batch operations
 - [ ] Undo/redo functionality
