@@ -1,79 +1,11 @@
-# PGPart - Partition Manager for FreeBSD/GhostBSD
+# PGPart - Partition Manager for PGSD/FreeBSD/GhostBSD
 
-A modern, graphical partition manager for FreeBSD and GhostBSD, similar to GParted but designed specifically for BSD systems. Built with Go and the Fyne UI framework.
-
-## Features
-
-- **Disk Detection**: Automatically detects all available disks using `geom`
-- **Interactive Partition Visualization**:
-  - Visual representation of partition layout with color-coded filesystems
-  - Drag handles for intuitive partition resizing
-  - Real-time size preview during drag operations
-- **Partition Operations**:
-  - Create new partition tables (GPT, MBR, BSD)
-  - Create new partitions
-  - Delete partitions
-  - **Format partitions**: UFS, FAT32, ext2, ext3, ext4, NTFS
-  - **Resize partitions with visual drag handles or slider interface**
-  - **Online filesystem resize**: Grow/shrink filesystems while mounted
-    - UFS online growth with `growfs`
-    - ext3/ext4 online grow and shrink with `resize2fs`
-    - XFS online growth with `xfs_growfs`
-    - Automatic detection of online resize capability
-  - **Copy partitions**: Clone partition data to another partition
-  - **Move partitions**: Copy partition and delete source
-  - Interactive resize dialog with min/max validation
-  - Progress monitoring for long operations
-- **Filesystem Support**:
-  - **Detection**: UFS, ZFS, FAT32, swap, ext2, ext3, ext4, NTFS
-  - **Formatting**: UFS (native), FAT32 (native), ext2/3/4 (requires e2fsprogs), NTFS (requires fusefs-ntfs)
-- **Mount Point Display**: Shows current mount points for partitions
-- **Detailed Disk Information**:
-  - SMART status monitoring and health assessment
-  - Disk temperature, power-on hours, power cycle count
-  - Individual SMART attribute details with status indicators
-  - Capability detection (TRIM support, SSD/HDD identification)
-- **Batch Operations**:
-  - Queue multiple partition operations for sequential execution
-  - Supports format, delete, resize, copy operations in batch mode
-  - Reorder operations with move up/down controls
-  - Progress tracking across all operations
-  - Stop on error or continue options
-  - Review and manage operation queue before execution
-- **Undo/Redo Functionality**:
-  - Operation history tracking for all partition changes
-  - Undo reversible operations (create, resize, attribute changes)
-  - Redo previously undone operations
-  - Clear indication of which operations can be reversed
-  - Confirmation dialogs before undo/redo execution
-  - Full support for GPT attribute change undo/redo
-- **GPT Attribute Management**:
-  - View and edit GPT partition attributes via comprehensive dialog
-  - Quick "Toggle Bootable" button for common operations
-  - Visual attribute indicators in partition list (shows bootable status)
-  - Set/unset bootable flag (`bootme`)
-  - Configure boot-once flag for testing (`bootonce`)
-  - Manage boot failure indicators (`bootfailed`)
-  - Full attribute management via CLI and GUI
-  - Improved attribute detection using gpart list and show
-- **Partition Alignment Optimization**:
-  - Check partition alignment for optimal performance
-  - Detect misaligned partitions on SSD and HDD
-  - Recommendations for 1 MiB or 4 MiB alignment
-  - Alignment analysis for entire disks or individual partitions
-- **Modern GUI**: Clean, intuitive interface using Fyne
-
-## Screenshots
-
-The application provides a split-pane interface with:
-- Left panel: List of available disks
-- Right panel: Partition visualization and details
-- Toolbar: Quick access to common operations
+A modern, graphical partition manager for PGSD, FreeBSD and GhostBSD, similar to GParted but designed specifically for BSD systems. Built with Go and the Fyne UI framework.
 
 ## Requirements
 
 ### System Requirements
-- FreeBSD 12.0 or later, or GhostBSD
+- PGSD, FreeBSD 14.0 or later, or GhostBSD
 - Root privileges (for partition operations)
 - X11 or Wayland display server
 
@@ -111,17 +43,12 @@ The application provides a split-pane interface with:
 
 2. Install dependencies:
    ```bash
-   go mod download
+   go mod tidy
    ```
 
-3. Build the application:
+3. Build and install the application:
    ```bash
-   go build -o pgpart
-   ```
-
-4. Install (optional):
-   ```bash
-   sudo install -m 755 pgpart /usr/local/bin/
+   sudo make install
    ```
 
 ## Usage
