@@ -19,13 +19,13 @@ type Partition struct {
 }
 
 type Disk struct {
-	Name        string
-	Model       string
-	Size        uint64
-	SectorSize  uint64
-	Scheme      string
-	Partitions  []Partition
-	Device      string
+	Name       string
+	Model      string
+	Size       uint64
+	SectorSize uint64
+	Scheme     string
+	Partitions []Partition
+	Device     string
 }
 
 func GetDisks() ([]Disk, error) {
@@ -106,7 +106,6 @@ func parseGpartShow(output string) ([]Partition, error) {
 	var partitions []Partition
 	lines := strings.Split(output, "\n")
 
-	var scheme string
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
@@ -114,10 +113,6 @@ func parseGpartShow(output string) ([]Partition, error) {
 		}
 
 		if strings.HasPrefix(line, "=>") {
-			parts := strings.Fields(line)
-			if len(parts) >= 6 {
-				scheme = parts[5]
-			}
 			continue
 		}
 

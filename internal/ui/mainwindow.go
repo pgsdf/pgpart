@@ -44,6 +44,7 @@ func (mw *MainWindow) setupUI() {
 		widget.NewToolbarSeparator(),
 		widget.NewToolbarAction(fyne.NewMenuItem("New Partition Table", nil).Icon, mw.showNewPartitionTableDialog),
 		widget.NewToolbarAction(fyne.NewMenuItem("New Partition", nil).Icon, mw.showNewPartitionDialog),
+		widget.NewToolbarAction(fyne.NewMenuItem("Resize Partition", nil).Icon, mw.showResizeDialog),
 		widget.NewToolbarAction(fyne.NewMenuItem("Delete Partition", nil).Icon, mw.showDeletePartitionDialog),
 		widget.NewToolbarAction(fyne.NewMenuItem("Format", nil).Icon, mw.showFormatDialog),
 	)
@@ -126,12 +127,19 @@ func (mw *MainWindow) updatePartitionView() {
 
 	mw.partitionView.Objects = nil
 
-	visualBox := mw.createPartitionVisual(disk)
-	mw.partitionView.Add(visualBox)
+	interactiveView := NewInteractivePartitionView(&disk, mw.window, mw.refreshDisks)
+	mw.partitionView.Add(container.NewVBox(
+		widget.NewLabel("Partition Layout (drag edges to resize):"),
+		interactiveView,
+	))
 
 	if len(disk.Partitions) == 0 {
 		mw.partitionView.Add(widget.NewLabel("No partitions found"))
 	} else {
+		legendLabel := widget.NewLabel("Legend: UFS (blue) | ZFS (green) | FAT32 (orange) | swap (red) | ext4 (purple)")
+		legendLabel.TextStyle = fyne.TextStyle{Italic: true}
+		mw.partitionView.Add(legendLabel)
+
 		for _, part := range disk.Partitions {
 			partCard := mw.createPartitionCard(part)
 			mw.partitionView.Add(partCard)
@@ -401,6 +409,52 @@ func (mw *MainWindow) showFormatDialog() {
 					dialog.ShowInformation("Success", "Partition formatted successfully", mw.window)
 					mw.refreshDisks()
 				}, mw.window)
+		}, mw.window)
+}
+
+func (mw *MainWindow) showResizeDialog() {
+	if mw.selectedDisk < 0 {
+		dialog.ShowInformation("No Disk Selected", "Please select a disk first", mw.window)
+		return
+	}
+
+	disk := mw.disks[mw.selectedDisk]
+
+	if len(disk.Partitions) == 0 {
+		dialog.ShowInformation("No Partitions", "This disk has no partitions", mw.window)
+		return
+	}
+
+	partNames := make([]string, len(disk.Partitions))
+	for i, part := range disk.Partitions {
+		partNames[i] = fmt.Sprintf("%s (%s)", part.Name, partition.FormatBytes(part.Size*512))
+	}
+
+	partSelect := widget.NewSelect(partNames, nil)
+
+	dialog.ShowForm("Resize Partition", "Next", "Cancel",
+		[]*widget.FormItem{
+			widget.NewFormItem("Partition", partSelect),
+		},
+		func(ok bool) {
+			if !ok {
+				return
+			}
+
+			selectedIdx := -1
+			for i, name := range partNames {
+				if name == partSelect.Selected {
+					selectedIdx = i
+					break
+				}
+			}
+
+			if selectedIdx < 0 {
+				return
+			}
+
+			resizeDialog := NewResizeDialog(mw.window, &disk, &disk.Partitions[selectedIdx], mw.refreshDisks)
+			resizeDialog.Show()
 		}, mw.window)
 }
 
