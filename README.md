@@ -455,20 +455,6 @@ PGPart uses the following FreeBSD system utilities:
 - `sha256`: Partition data verification
 - `smartctl`: SMART status monitoring and disk health assessment
 
-## Limitations
-
-- Requires root privileges for most operations
-- Some operations may require the disk to be unmounted
-- Advanced features like partition alignment optimization are not yet implemented
-- Online resizing is limited by the capabilities of the underlying filesystem
-
-## Safety Features
-
-- Privilege checking before destructive operations
-- Confirmation dialogs for delete and format operations
-- Error reporting with detailed messages
-- Read-only mode when not running as root
-
 ## Development
 
 ### Project Structure
@@ -525,12 +511,6 @@ Author: Vester (Vic) Thacker
 
 See the [LICENSE](LICENSE) file for full license details.
 
-## Acknowledgments
-
-- Inspired by GParted
-- Built with [Fyne](https://fyne.io/) UI toolkit
-- Uses FreeBSD's powerful geom and gpart utilities
-
 ## Disclaimer
 
 **USE AT YOUR OWN RISK!** Partition operations can result in data loss if used incorrectly. Always backup important data before performing partition operations.
@@ -539,18 +519,3 @@ See the [LICENSE](LICENSE) file for full license details.
 
 For issues, questions, or contributions, please visit:
 https://github.com/pgsdf/pgpart
-
-## Future Enhancements
-
-Planned features for future releases:
-
-- [x] Partition resizing with visual drag handles ✅ **IMPLEMENTED**
-- [x] Support for more filesystems (ext2/3/4, NTFS) ✅ **IMPLEMENTED**
-- [x] Partition copying and moving ✅ **IMPLEMENTED**
-- [x] Detailed disk information (SMART status) ✅ **IMPLEMENTED**
-- [x] Batch operations ✅ **IMPLEMENTED**
-- [x] Undo/redo functionality ✅ **IMPLEMENTED**
-- [x] Command-line interface for scripting ✅ **IMPLEMENTED**
-- [x] Partition alignment optimization ✅ **IMPLEMENTED**
-- [ ] GPT attribute editing
-- [ ] Online filesystem resize (grow/shrink while mounted)
