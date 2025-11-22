@@ -2,8 +2,23 @@ package partition
 
 import (
 	"fmt"
+	"regexp"
 	"sync"
 )
+
+// ParsePartitionName extracts disk name and partition index from a partition name
+// Examples: ada0p1 -> (ada0, 1), ada0s1a -> (ada0, s1a)
+func ParsePartitionName(partName string) (disk string, index string, err error) {
+	// Match patterns like ada0p1, ada0s1, nvd0p2, etc.
+	re := regexp.MustCompile(`^([a-z]+[0-9]+)([ps][0-9]+[a-z]?)$`)
+	matches := re.FindStringSubmatch(partName)
+
+	if len(matches) != 3 {
+		return "", "", fmt.Errorf("invalid partition name format: %s", partName)
+	}
+
+	return matches[1], matches[2][1:], nil // Skip 'p' or 's' prefix
+}
 
 // OperationType represents the type of partition operation
 type OperationType int
@@ -46,12 +61,17 @@ type BatchOperation struct {
 	Error       string
 
 	// Operation-specific parameters
+	Disk           string
+	Index          string
 	Partition      string
 	SourcePart     string
 	DestPart       string
+	SourceDisk     string
+	SourceIndex    string
+	DestDisk       string
+	DestIndex      string
 	FilesystemType string
 	Size           uint64
-	StartOffset    uint64
 }
 
 // BatchQueue manages a queue of partition operations
@@ -191,22 +211,22 @@ func (bq *BatchQueue) ExecuteAll(stopOnError bool, progressCallback func(int, in
 func (bq *BatchQueue) executeOperation(op *BatchOperation) error {
 	switch op.Type {
 	case OpCreate:
-		return CreatePartition(op.Partition, op.FilesystemType, op.Size, op.StartOffset)
+		return CreatePartition(op.Disk, op.Size, op.FilesystemType)
 
 	case OpDelete:
-		return DeletePartition(op.Partition)
+		return DeletePartition(op.Disk, op.Index)
 
 	case OpFormat:
 		return FormatPartition(op.Partition, op.FilesystemType)
 
 	case OpResize:
-		return ResizePartition(op.Partition, op.Size)
+		return ResizePartition(op.Disk, op.Index, op.Size)
 
 	case OpCopy:
 		return CopyPartition(op.SourcePart, op.DestPart, nil)
 
 	case OpMove:
-		return MovePartition(op.SourcePart, op.DestPart, nil)
+		return MovePartition(op.SourceDisk, op.SourceIndex, op.DestDisk, op.DestIndex, nil)
 
 	default:
 		return fmt.Errorf("unknown operation type: %v", op.Type)
