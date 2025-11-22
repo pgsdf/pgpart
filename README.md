@@ -15,6 +15,11 @@ A modern, graphical partition manager for FreeBSD and GhostBSD, similar to GPart
   - Delete partitions
   - **Format partitions**: UFS, FAT32, ext2, ext3, ext4, NTFS
   - **Resize partitions with visual drag handles or slider interface**
+  - **Online filesystem resize**: Grow/shrink filesystems while mounted
+    - UFS online growth with `growfs`
+    - ext3/ext4 online grow and shrink with `resize2fs`
+    - XFS online growth with `xfs_growfs`
+    - Automatic detection of online resize capability
   - **Copy partitions**: Clone partition data to another partition
   - **Move partitions**: Copy partition and delete source
   - Interactive resize dialog with min/max validation
