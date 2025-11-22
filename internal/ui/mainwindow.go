@@ -43,6 +43,10 @@ func (mw *MainWindow) setupUI() {
 		widget.NewToolbarSeparator(),
 		widget.NewToolbarAction(fyne.NewMenuItem("New Partition Table", nil).Icon, mw.showNewPartitionTableDialog),
 		widget.NewToolbarAction(fyne.NewMenuItem("New Partition", nil).Icon, mw.showNewPartitionDialog),
+		widget.NewToolbarSeparator(),
+		widget.NewToolbarAction(fyne.NewMenuItem("Copy Partition", nil).Icon, mw.showCopyDialog),
+		widget.NewToolbarAction(fyne.NewMenuItem("Move Partition", nil).Icon, mw.showMoveDialog),
+		widget.NewToolbarSeparator(),
 		widget.NewToolbarAction(fyne.NewMenuItem("Resize Partition", nil).Icon, mw.showResizeDialog),
 		widget.NewToolbarAction(fyne.NewMenuItem("Delete Partition", nil).Icon, mw.showDeletePartitionDialog),
 		widget.NewToolbarAction(fyne.NewMenuItem("Format", nil).Icon, mw.showFormatDialog),
@@ -511,6 +515,16 @@ func (mw *MainWindow) createColorLegend() *fyne.Container {
 		items,
 		widget.NewSeparator(),
 	)
+}
+
+func (mw *MainWindow) showCopyDialog() {
+	copyDialog := NewCopyDialog(mw.window, mw.disks, "copy", mw.refreshDisks)
+	copyDialog.Show()
+}
+
+func (mw *MainWindow) showMoveDialog() {
+	moveDialog := NewCopyDialog(mw.window, mw.disks, "move", mw.refreshDisks)
+	moveDialog.Show()
 }
 
 func (mw *MainWindow) Show() {
