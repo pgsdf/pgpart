@@ -185,16 +185,40 @@ func PerformOnlineResize(diskName, partIndex string, newSizeBytes uint64, part *
 		return fmt.Errorf("cannot perform online resize: %s", reason)
 	}
 
-	// Step 1: Resize the partition
-	if err := ResizePartition(diskName, partIndex, newSizeBytes); err != nil {
-		return fmt.Errorf("failed to resize partition: %v", err)
-	}
+	if isGrow {
+		// For GROWING: Resize partition first, then grow filesystem
+		// This is safe: if filesystem grow fails, we just have extra unused space
 
-	// Step 2: Resize the filesystem online
-	if err := ResizeFilesystemOnline(part, newSizeBytes); err != nil {
-		// Partition was resized but filesystem wasn't
-		// Log the error but don't fail completely
-		return fmt.Errorf("partition resized but filesystem resize failed: %v\nYou may need to resize the filesystem manually", err)
+		// Step 1: Resize the partition
+		if err := ResizePartition(diskName, partIndex, newSizeBytes); err != nil {
+			return fmt.Errorf("failed to resize partition: %v", err)
+		}
+
+		// Step 2: Grow the filesystem online
+		if err := ResizeFilesystemOnline(part, newSizeBytes); err != nil {
+			// Partition was resized but filesystem wasn't
+			// This is non-critical - the partition is larger, filesystem just doesn't use all the space
+			return fmt.Errorf("partition resized successfully, but filesystem grow failed: %v\n\nThe partition is now larger but the filesystem has not expanded to fill it.\nYou can try running the filesystem resize command manually:\n- UFS: growfs -y %s\n- ext2/3/4: resize2fs %s\n- XFS: xfs_growfs %s",
+				err, part.MountPoint, part.Name, part.MountPoint)
+		}
+	} else {
+		// For SHRINKING: Shrink filesystem first, then resize partition
+		// This is safe: if partition resize fails after filesystem shrink, at least data is safe
+
+		// Step 1: Shrink the filesystem online
+		if err := ResizeFilesystemOnline(part, newSizeBytes); err != nil {
+			// Filesystem shrink failed, partition is still original size
+			// This is safe - nothing has changed, operation just failed
+			return fmt.Errorf("failed to shrink filesystem: %v\n\nNo changes were made to the partition.", err)
+		}
+
+		// Step 2: Resize the partition
+		if err := ResizePartition(diskName, partIndex, newSizeBytes); err != nil {
+			// Filesystem was shrunk but partition wasn't
+			// This is problematic - filesystem is smaller than partition
+			return fmt.Errorf("filesystem shrunk successfully, but partition resize failed: %v\n\nWARNING: The filesystem has been shrunk but the partition size was not changed.\nThe filesystem is now smaller than the partition.\nYou can try resizing the partition manually with: gpart resize -i %s -s %d %s",
+				err, partIndex, newSizeBytes, diskName)
+		}
 	}
 
 	return nil
