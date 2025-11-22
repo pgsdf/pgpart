@@ -115,7 +115,7 @@ If you discover a security vulnerability:
 
 ## License
 
-By contributing to PGPart, you agree that your contributions will be licensed under the MIT License.
+By contributing to PGPart, you agree that your contributions will be licensed under the BSD 2-Clause License.
 
 ## Questions?
 

@@ -135,9 +135,8 @@ func (mw *MainWindow) updatePartitionView() {
 	if len(disk.Partitions) == 0 {
 		mw.partitionView.Add(widget.NewLabel("No partitions found"))
 	} else {
-		legendLabel := widget.NewLabel("Legend: UFS (blue) | ZFS (green) | FAT32 (orange) | swap (red) | ext4 (purple)")
-		legendLabel.TextStyle = fyne.TextStyle{Italic: true}
-		mw.partitionView.Add(legendLabel)
+		legend := mw.createColorLegend()
+		mw.partitionView.Add(legend)
 
 		for _, part := range disk.Partitions {
 			partCard := mw.createPartitionCard(part)
@@ -183,17 +182,17 @@ func (mw *MainWindow) createPartitionVisual(disk partition.Disk) *fyne.Container
 func getPartitionColor(fsType string) color.Color {
 	switch fsType {
 	case "UFS":
-		return color.RGBA{R: 100, G: 150, B: 255, A: 255}
+		return color.RGBA{R: 70, G: 130, B: 230, A: 255} // Steel Blue
 	case "ZFS":
-		return color.RGBA{R: 100, G: 200, B: 100, A: 255}
+		return color.RGBA{R: 50, G: 205, B: 50, A: 255} // Lime Green
 	case "FAT32":
-		return color.RGBA{R: 255, G: 200, B: 100, A: 255}
+		return color.RGBA{R: 255, G: 165, B: 0, A: 255} // Orange
 	case "swap":
-		return color.RGBA{R: 255, G: 100, B: 100, A: 255}
+		return color.RGBA{R: 220, G: 20, B: 60, A: 255} // Crimson Red
 	case "ext4":
-		return color.RGBA{R: 200, G: 100, B: 255, A: 255}
+		return color.RGBA{R: 147, G: 51, B: 234, A: 255} // Purple
 	default:
-		return color.RGBA{R: 150, G: 150, B: 150, A: 255}
+		return color.RGBA{R: 169, G: 169, B: 169, A: 255} // Dark Gray
 	}
 }
 
@@ -455,6 +454,36 @@ func (mw *MainWindow) showResizeDialog() {
 			resizeDialog := NewResizeDialog(mw.window, &disk, &disk.Partitions[selectedIdx], mw.refreshDisks)
 			resizeDialog.Show()
 		}, mw.window)
+}
+
+func (mw *MainWindow) createColorLegend() *fyne.Container {
+	createLegendItem := func(label string, fsType string) *fyne.Container {
+		colorBox := canvas.NewRectangle(getPartitionColor(fsType))
+		colorBox.SetMinSize(fyne.NewSize(20, 20))
+		colorBox.StrokeColor = color.RGBA{R: 0, G: 0, B: 0, A: 255}
+		colorBox.StrokeWidth = 1
+
+		text := widget.NewLabel(label)
+		return container.NewHBox(colorBox, text)
+	}
+
+	legendLabel := widget.NewLabel("Color Legend:")
+	legendLabel.TextStyle = fyne.TextStyle{Bold: true}
+
+	items := container.NewHBox(
+		createLegendItem("UFS", "UFS"),
+		createLegendItem("ZFS", "ZFS"),
+		createLegendItem("FAT32", "FAT32"),
+		createLegendItem("swap", "swap"),
+		createLegendItem("ext4", "ext4"),
+		createLegendItem("Unknown", ""),
+	)
+
+	return container.NewVBox(
+		legendLabel,
+		items,
+		widget.NewSeparator(),
+	)
 }
 
 func (mw *MainWindow) Show() {

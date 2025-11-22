@@ -224,7 +224,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is open source. Please check the repository for license details.
+This project is licensed under the BSD 2-Clause License.
+
+Copyright (c) 2025, Pacific Grove Software Distribution Foundation
+Author: Vester (Vic) Thacker
+
+See the [LICENSE](LICENSE) file for full license details.
 
 ## Acknowledgments
 
