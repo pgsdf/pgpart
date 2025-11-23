@@ -3,7 +3,6 @@ package partition
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os/exec"
 	"strconv"
 	"strings"
